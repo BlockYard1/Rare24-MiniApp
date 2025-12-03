@@ -1,23 +1,33 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { ImagePlus, Send, Replace } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
 
 export function ImageUploadCard() {
+  const route = useRouter()
+
   const [caption, setCaption] = useState("")
+  const [price, setPrice] = useState("");
+  const [inUsd, setInUsd] = useState("0")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [image, setImage] = useState<File | null>(null)
   const [emptyImage, setEmptyImage] = useState(false)
-  const [emptycaption, setEmptycaption] = useState(false)
+  const [emptyCaption, setEmptyCaption] = useState(false)
+  const [emptyPrice, setEmptyPrice] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [isError, setIsError] = useState(false)
 
   const MIN_WIDTH = 1080
   const MAX_WIDTH = 5000
   const MIN_HEIGHT = 1080
   const MAX_HEIGHT = 5000
 
+  // Image
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if(!file) return
@@ -49,6 +59,7 @@ export function ImageUploadCard() {
       const reader = new FileReader()
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string)
+        setImage(file)
       }
       reader.readAsDataURL(file)
       URL.revokeObjectURL(objectUrl)
@@ -62,39 +73,58 @@ export function ImageUploadCard() {
     img.src = objectUrl
   }
 
-  // 
+  // ETH to USD
+  useEffect(() => {
+    const ethInUsd = 3456;
+    const amountPrice = Number(price) * ethInUsd;
+    setInUsd(amountPrice.toFixed(2))
+  }, [price]);
+
+  // Close success
+  const closeStatus = () => {
+    setIsError(false)
+    setIsSuccess(false)
+    setSelectedImage(null)
+    setCaption("")
+    setPrice("")
+  }
+
+  // Upload
   const handleUpload = async () => {
-    if (!selectedImage || !caption) {
+    if (!selectedImage || !caption || !price) {
       if(!selectedImage) setEmptyImage(true);
-      if(!caption) setEmptycaption(true);
+      if(!caption) setEmptyCaption(true);
+      if(!price) setEmptyPrice(true);
       return
     }
-    console.log("Uploading:", { image: selectedImage, caption })
+    console.log("Uploading:", { caption, price })
 
     setIsUploading(true)
 
     try {
+      // await new Promise(resolve => setTimeout(resolve, 10000))
+
       // Create FormData
       const formData = new FormData()
-      formData.append('image', selectedImage)
+      image && formData.append('image', image)
       formData.append('caption', caption)
+      formData.append('price', price)
 
       // Call server action
       const result = await uploadImage(formData)
 
       if (result.success) {
+        setIsUploading(false)
+        setIsSuccess(true)
         alert(result.message)
-        // Reset form
-        setSelectedImage(null)
-        setCaption("")
       } else {
         alert(result.message)
       }
     } catch (error) {
       console.error("Upload error:", error)
       alert("Upload failed. Please try again.")
-    } finally {
       setIsUploading(false)
+      setIsError(true)
     }
   }
 
@@ -103,13 +133,51 @@ export function ImageUploadCard() {
       {/* Main Content - fills available space */}
       <div className="flex-1 flex flex-col gap-4 p-4 overflow-auto">
         {/* Image Preview Area - grows to fill space */}
-        <div className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed ${emptyImage ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" :"border-teal-500 dark:border-teal-800 dark:bg-[#222529] bg-teal-100/10"} border-border rounded-lg`}>
+        <div className={`flex-1 flex flex-col items-center justify-center ${emptyImage && "border-2 border-dashed border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10 border-border rounded-lg"} ${(isUploading || isError || isSuccess) ? "" : "border-2 border-dashed  border-teal-500 dark:border-teal-800 dark:bg-[#222529] bg-teal-100/10 border-border rounded-lg"}`}>
           {selectedImage ? (
-            <img
-              src={selectedImage}
-              alt="Selected"
-              className="w-full h-full object-contain rounded-lg"
-            />
+            <>
+              <img
+                src={selectedImage}
+                alt="Selected"
+                className={`w-full ${(isUploading || isError || isSuccess) ? "h-3/4" : "h-full"} object-contain rounded-lg`}
+              />
+              {
+                isUploading && (
+                  <div className="flex flex-col w-full items-center text-teal-800 dark:text-teal-300 justify-center p-5 gap-2 border bg-teal-500/20 border-teal-700 rounded-lg">
+                    <span className="animate-spin">
+                      <LoaderPinwheel size={35} />
+                    </span>
+                    <span className="text-lg font-semibold">Turning Your Moment Into An NFT</span>
+                  </div>
+                )
+              }
+              {
+                isError && (
+                  <div className="flex flex-col w-full items-center text-red-700 dark:text-red-300 justify-center p-5 gap-2 border bg-red-500/20 border-red-700 rounded-lg">
+                    <span className="animate-pulse">
+                      <CircleX size={35} />
+                    </span>
+                    <span className="text-lg font-semibold">Failed to Turn Moment Into NFT.</span>
+                    <button onClick={() => closeStatus()} className="px-3 py-2 bg-red-600 rounded-lg text-white">
+                      Let's Try Again
+                    </button>
+                  </div>
+                )
+              }
+              {
+                isSuccess && (
+                  <div className="flex flex-col w-full items-center text-green-800 dark:text-green-300 justify-center p-5 gap-2 border bg-green-500/20 border-green-700 rounded-lg">
+                    <span className="animate-pulse">
+                      <CircleCheck size={35} />
+                    </span>
+                    <span className="text-lg font-semibold">Successfully Shared Moment As NFT</span>
+                    <button onClick={() => route.push("/")} className="px-3 py-2 bg-green-600 rounded-lg text-white">
+                      Okay
+                    </button>
+                  </div>
+                )
+              }
+            </>
           ) : (
             <label className={`flex flex-col items-center gap-2 cursor-pointer p-8`}>
               <input 
@@ -124,7 +192,7 @@ export function ImageUploadCard() {
             </label>
           )}
           {
-            selectedImage && (
+            selectedImage && !isUploading && !isSuccess && !isError && (
               <span onClick={() => setSelectedImage(null)} className="dark:bg-gray-800 dark:border dark:border-gray-600 bg-gray-300 rounded-full p-2 my-2">
                 <Replace size={25} className="" />
               </span>
@@ -139,25 +207,51 @@ export function ImageUploadCard() {
           </div>
         )}
 
-        {/* Caption Textarea */}
-        <textarea
-          placeholder="Add caption ..."
-          value={caption}
-          onChange={(e) => {
-            setCaption(e.target.value)
-            setEmptycaption(false)
-          }}
-          className={`w-full px-4 py-3 border ${emptycaption ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10 focus:ring-red-500 " : "dark:bg-[#222529] bg-teal-500/10 border-teal-700 focus:ring-teal-500 "} rounded-lg text-lg focus:outline-none focus:ring-1 resize-none`}
-          rows={4}
-        />
+        <div className={`${(isUploading || isError || isSuccess) && "hidden"} flex flex-col gap-4`}>
+          {/* Caption Textarea */}
+          <textarea
+            placeholder="Add caption ..."
+            value={caption}
+            onChange={(e) => {
+              setCaption(e.target.value)
+              setEmptyCaption(false)
+            }}
+            className={`w-full px-4 py-3 border ${emptyCaption ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10 focus:ring-red-500 " : "dark:bg-[#222529] bg-teal-500/10 border-teal-700 focus:ring-teal-500 "} rounded-lg text-lg focus:outline-none focus:ring-1 resize-none`}
+            rows={4}
+          />
 
-        {/* Upload Button */}
-        <button
-          onClick={async() => await handleUpload()}
-          className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
-        >
-          <Send className="text-blue-500 dark:text-blue-300" size={25} />
-        </button>
+          {/* Price */}
+          <div>
+            <label className={`flex items-center justify-between gap-2 cursor-pointer p-2 border ${emptyPrice ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg text-lg`}>
+              <input
+                placeholder="0.01 ETH"
+                type="text"
+                value={price}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) setPrice(val);
+                  setEmptyPrice(false)
+                }}
+                onBlur={() => {
+                  if (Number(price) < 0.001) setPrice("0.001");
+                }}
+                className="px-4 py-3 w-full outline-none"
+              />
+              <p className={`text-lg pr-2 dark:text-gray-400 text-gray-800`}>${inUsd}</p>
+            </label>
+            <p className="text-xs text-center my-2 dark:text-gray-400 text-gray-800">
+              * Minimum is 0.001 ETH
+            </p>
+          </div>
+
+          {/* Upload Button */}
+          <button
+            onClick={async() => await handleUpload()}
+            className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
+          >
+            <Send className="text-blue-500 dark:text-blue-300" size={25} />
+          </button>
+        </div>
       </div>
     </div>
   )
