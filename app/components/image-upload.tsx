@@ -1,32 +1,63 @@
 "use client"
 
-import { Manrope } from "next/font/google"
 import type React from "react"
 import { useState } from "react"
-import { ImagePlus, Send } from "lucide-react"
-
-const manrope = Manrope({ 
-  weight: ['400'],
-  subsets: ['latin'],
-  variable: '--font-manrope',
-})
+import { ImagePlus, Send, Replace } from "lucide-react"
 
 export function ImageUploadCard() {
   const [caption, setCaption] = useState("")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [emptyImage, setEmptyImage] = useState(false)
   const [emptycaption, setEmptycaption] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const MIN_WIDTH = 1080
+  const MAX_WIDTH = 5000
+  const MIN_HEIGHT = 1080
+  const MAX_HEIGHT = 5000
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) {
-      setEmptyImage(false)  
+    if(!file) return
+    setEmptyImage(false) 
+
+    // Reset error
+    setError(null)
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError("Please select a valid image file")
+      return
+    }
+
+    // Create an image element to check dimensions
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+
+    img.onload = () => {
+      // Check dimensions
+      if (img.width < MIN_WIDTH || img.width > MAX_WIDTH || img.height < MIN_HEIGHT || img.height > MAX_HEIGHT || img.width > img.height) {
+        setError(`Image Too Small or Too Large!`)
+        URL.revokeObjectURL(objectUrl)
+        event.target.value = "" // Reset file input
+        return
+      }
+
+      // If dimensions are correct, load the image
       const reader = new FileReader()
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string)
       }
       reader.readAsDataURL(file)
+      URL.revokeObjectURL(objectUrl)
     }
+
+    img.onerror = () => {
+      setError("Failed to load image")
+      URL.revokeObjectURL(objectUrl)
+    }
+
+    img.src = objectUrl
   }
 
   const handleUpload = () => {
@@ -63,7 +94,21 @@ export function ImageUploadCard() {
               <span className="text-sm text-primary underline mt-2">Click to browse</span>
             </label>
           )}
+          {
+            selectedImage && (
+              <span onClick={() => setSelectedImage(null)} className="dark:bg-gray-800 dark:border dark:border-gray-600 bg-gray-300 rounded-full p-2 my-2">
+                <Replace size={25} className="" />
+              </span>
+            )
+          }
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="p-3 bg-red-500/10 text-center border border-red-500/50 rounded-lg text-red-600 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Caption Textarea */}
         <textarea
