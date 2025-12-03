@@ -4,6 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus, Tags, Home, Search, User } from "lucide-react"
 
+const username = "Caleb";
+
 const navItems = [
   {
     href: "/uploadNft",
@@ -26,7 +28,7 @@ const navItems = [
     label: "Search",
   },
   {
-    href: "/profile",
+    href: `/profile/${username}`,
     icon: User,
     label: "Profile",
   },
