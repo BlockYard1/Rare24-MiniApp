@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { ImagePlus, Send, Replace } from "lucide-react"
+import { uploadImage } from "../backend/upload"
 
 export function ImageUploadCard() {
   const [caption, setCaption] = useState("")
@@ -10,6 +11,7 @@ export function ImageUploadCard() {
   const [emptyImage, setEmptyImage] = useState(false)
   const [emptycaption, setEmptycaption] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const MIN_WIDTH = 1080
   const MAX_WIDTH = 5000
@@ -60,13 +62,40 @@ export function ImageUploadCard() {
     img.src = objectUrl
   }
 
-  const handleUpload = () => {
+  // 
+  const handleUpload = async () => {
     if (!selectedImage || !caption) {
       if(!selectedImage) setEmptyImage(true);
       if(!caption) setEmptycaption(true);
       return
     }
     console.log("Uploading:", { image: selectedImage, caption })
+
+    setIsUploading(true)
+
+    try {
+      // Create FormData
+      const formData = new FormData()
+      formData.append('image', selectedImage)
+      formData.append('caption', caption)
+
+      // Call server action
+      const result = await uploadImage(formData)
+
+      if (result.success) {
+        alert(result.message)
+        // Reset form
+        setSelectedImage(null)
+        setCaption("")
+      } else {
+        alert(result.message)
+      }
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("Upload failed. Please try again.")
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -124,7 +153,7 @@ export function ImageUploadCard() {
 
         {/* Upload Button */}
         <button
-          onClick={handleUpload}
+          onClick={async() => await handleUpload()}
           className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
         >
           <Send className="text-blue-500 dark:text-blue-300" size={25} />
