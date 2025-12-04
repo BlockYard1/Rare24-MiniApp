@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TopBar from "./components/top-bar";
 import BottomNavigation from "./components/bottom-navigation";
+import { Web3Provider } from "./providers/wagmiProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,9 +30,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
       >
-        <TopBar/>
-        <main className="flex-1 overflow-y-auto">{children}</main>
-        <BottomNavigation />
+        <Web3Provider>
+          <TopBar/>
+          <main className="flex-1 overflow-y-auto">{children}</main>
+          <BottomNavigation />
+        </Web3Provider>
       </body>
     </html>
   );
