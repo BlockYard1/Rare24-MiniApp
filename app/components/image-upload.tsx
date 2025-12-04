@@ -5,12 +5,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
-import { useConnection, useConnectors, useConnect } from 'wagmi'
+import { useConnection } from 'wagmi'
+import { getCreatorMomentsCount } from "../blockchain/getterHooks"
 
 export function ImageUploadCard() {
   const route = useRouter()
-
   const { isConnected, address } = useConnection()
+
   console.log(`address: ${address} ${isConnected}`)
 
   const [caption, setCaption] = useState("")
@@ -25,6 +26,7 @@ export function ImageUploadCard() {
   const [isUploading, setIsUploading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isError, setIsError] = useState(false)
+  const [momentCount, setMomentCount] = useState(0)
 
   const MIN_WIDTH = 1080
   const MAX_WIDTH = 5000
@@ -32,6 +34,16 @@ export function ImageUploadCard() {
   const MAX_HEIGHT = 5000
 
   const userName = "mokuakaleb";
+
+  // moment count
+  useEffect(() => {
+    const getCount = async () => {
+      const count = await getCreatorMomentsCount(address as `0x${string}`);
+      setMomentCount(count + 1)
+    }
+
+    getCount()
+  }, []);
 
   // Image
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,6 +125,7 @@ export function ImageUploadCard() {
       image && formData.append('image', image)
       formData.append('caption', caption)
       formData.append('creator', userName)
+      formData.append('momentCount', momentCount.toString())
 
       // Call server action
       const result = await uploadImage(formData)
