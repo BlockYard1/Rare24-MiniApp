@@ -1,12 +1,12 @@
 import { http, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector'
-import { coinbaseWallet, injected } from 'wagmi/connectors'
+import { injected } from 'wagmi/connectors'
 
 export const config = createConfig({
   chains: [baseSepolia],
   transports: {
-    [baseSepolia.id]: http(),
+    [baseSepolia.id]: http(process.env.BASE_SEPOLIA_RPC),
   },
   connectors: [
     injected(),
