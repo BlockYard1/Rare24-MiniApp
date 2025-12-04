@@ -5,9 +5,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
+import { useConnection, useConnectors, useConnect } from 'wagmi'
 
 export function ImageUploadCard() {
   const route = useRouter()
+
+  const { isConnected, address } = useConnection()
+  console.log(`address: ${address} ${isConnected}`)
 
   const [caption, setCaption] = useState("")
   const [price, setPrice] = useState("");
@@ -26,6 +30,8 @@ export function ImageUploadCard() {
   const MAX_WIDTH = 5000
   const MIN_HEIGHT = 1080
   const MAX_HEIGHT = 5000
+
+  const userName = "mokuakaleb";
 
   // Image
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,22 +108,23 @@ export function ImageUploadCard() {
     setIsUploading(true)
 
     try {
-      // await new Promise(resolve => setTimeout(resolve, 10000))
-
       // Create FormData
       const formData = new FormData()
       image && formData.append('image', image)
       formData.append('caption', caption)
-      formData.append('price', price)
+      formData.append('creator', userName)
 
       // Call server action
       const result = await uploadImage(formData)
+      // check error
+      if(!result.success) throw new Error("Image Upload Failed!");
+
+      // call contract function
+      
 
       if (result.success) {
         setIsUploading(false)
         setIsSuccess(true)
-        alert(result.message)
-      } else {
         alert(result.message)
       }
     } catch (error) {
