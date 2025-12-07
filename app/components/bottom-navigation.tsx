@@ -3,39 +3,41 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus, Tags, Home, Search, User } from "lucide-react"
+import { useFarcasterStore } from "../store/useFarcasterStore"
 
 const username = "Caleb";
 
-const navItems = [
-  {
-    href: "/uploadNft",
-    icon: Plus,
-    label: "Add",
-  },
-  {
-    href: "/marketplace",
-    icon: Tags,
-    label: "Notifications",
-  },
-  {
-    href: "/",
-    icon: Home,
-    label: "Home",
-  },
-  {
-    href: "/search",
-    icon: Search,
-    label: "Search",
-  },
-  {
-    href: `/profile/${username}`,
-    icon: User,
-    label: "Profile",
-  },
-]
-
 export default function BottomNavigation() {
   const pathname = usePathname()
+  const user = useFarcasterStore((state) => state.user)
+
+  const navItems = [
+    {
+      href: "/uploadNft",
+      icon: Plus,
+      label: "Add",
+    },
+    {
+      href: "/marketplace",
+      icon: Tags,
+      label: "Notifications",
+    },
+    {
+      href: "/",
+      icon: Home,
+      label: "Home",
+    },
+    {
+      href: "/search",
+      icon: Search,
+      label: "Search",
+    },
+    {
+      href: `/profile/${user ? user.username : 'NaN'}`,
+      icon: User,
+      label: "Profile",
+    },
+  ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background">
