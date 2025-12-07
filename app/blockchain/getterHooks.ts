@@ -14,10 +14,6 @@ export async function getCreatorMomentsCount(creatorAddress: `0x${string}`) {
         args: [creatorAddress]
     }) as bigint[];
 
-    console.log('array:', tokenIdArray); // ✅ This will show [1n]
-    console.log('length:', tokenIdArray.length); // ✅ This will show 1
-    console.log('is array?', Array.isArray(tokenIdArray)); // ✅ Should be true
-
     // return number of moments shared
     return tokenIdArray.length
 }
