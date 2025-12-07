@@ -7,3 +7,8 @@ export interface UserData {
     followingCount: number;
     bio: string;
 }
+
+export interface CanPost {
+    canPost: boolean;
+    toNext: string;
+}
