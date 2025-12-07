@@ -9,10 +9,11 @@ import { getEthPrice } from "../backend/price"
 import { useConnection, Config } from 'wagmi'
 import { simulateContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { parseEther } from "viem"
-import { getCreatorMomentsCount } from "../blockchain/getterHooks"
+import { getCreatorMomentsCount, checkIfCanPost } from "../blockchain/getterHooks"
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core"
 import { config } from "@/utils/wagmi"
 import { useFarcasterStore } from "../store/useFarcasterStore"
+import { CanPost } from "../types/index.t"
 
 export function ImageUploadCard() {
   const route = useRouter()
@@ -37,6 +38,7 @@ export function ImageUploadCard() {
   const [isError, setIsError] = useState(false)
   const [momentCount, setMomentCount] = useState(0)
   const [maxSupplyLimit, setMaxSupplyLimit] = useState(0)
+  const [canPost, setCanPost] = useState<CanPost | null>(null)
 
   // Image Size
   const MIN_WIDTH = 1080
@@ -46,15 +48,31 @@ export function ImageUploadCard() {
 
   useEffect(() => {
     // moment count
-    const getCount = async () => {
+    const getCount = async() => {
       try {
-        const count = await getCreatorMomentsCount(address as `0x${string}`);
-        setMomentCount(count + 1)
+        if(user){
+          const count = await getCreatorMomentsCount(user?.username);
+          setMomentCount(count)
+          // console.log(user?.username, " + ", count)
+        }
       } catch(error) {
         console.log('Error fetching user moment count:', error)
       }
     }
     getCount()
+
+    // check if can post
+    const post = async() => {
+      try{
+        if(user){
+          const _canPost = await checkIfCanPost(user?.username)
+          setCanPost(_canPost)
+        }
+      } catch(error) {
+        console.log('Error checking if can post:', error)
+      }
+    }
+    post()
 
     if(user) setMaxSupplyLimit(user.followerCount)
   }, []);
@@ -113,7 +131,7 @@ export function ImageUploadCard() {
         const amountPrice = Number(price) * usdPrice;
         setInUsd(amountPrice.toFixed(2))
       } 
-      console.log(`eth price: ${usdPrice}`)
+      // console.log(`eth price: ${usdPrice}`)
     }
 
     ethInUsd()
@@ -126,6 +144,7 @@ export function ImageUploadCard() {
     setSelectedImage(null)
     setCaption("")
     setPrice("")
+    setMaxsupply("")
   }
 
   // Upload
@@ -137,7 +156,7 @@ export function ImageUploadCard() {
       if(!maxsupply || Number(maxsupply) == 0) setEmptySupply(true);
       return
     }
-    console.log("Uploading:", { caption, price, maxsupply })
+    console.log("Uploading:", { caption, price, maxsupply, momentCount })
 
     setIsUploading(true)
 
@@ -161,7 +180,7 @@ export function ImageUploadCard() {
         abi: RARE24_CONTRACT_ABI,
         address: RARE24_CONTRACT_ADDRESS,
         functionName: 'uploadNft',
-        args: [response.message, parseEther(price), BigInt(maxsupply), creators],
+        args: [response.message, parseEther(price), BigInt(maxsupply), user?.username, creators]
       })
       const hash = await writeContract(config as Config, request)
       const receipt = await waitForTransactionReceipt(config as Config, { hash });
@@ -173,7 +192,6 @@ export function ImageUploadCard() {
       setIsSuccess(true)
     } catch (error) {
       console.error("Upload error:", error)
-      alert("Upload failed. Please try again.")
       setIsUploading(false)
       setIsError(true)
     }
@@ -234,6 +252,7 @@ export function ImageUploadCard() {
               <input 
                 type="file" 
                 accept="image/*" 
+                disabled={!canPost?.canPost}
                 onChange={handleImageSelect} 
                 className="hidden" 
               />
@@ -262,6 +281,7 @@ export function ImageUploadCard() {
           {/* Caption Textarea */}
           <textarea
             placeholder="Add caption ..."
+            disabled={!canPost?.canPost}
             value={caption}
             onChange={(e) => {
               setCaption(e.target.value)
@@ -280,6 +300,7 @@ export function ImageUploadCard() {
               <input
                 placeholder="10"
                 type="text"
+                disabled={!canPost?.canPost}
                 value={maxsupply}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -305,6 +326,7 @@ export function ImageUploadCard() {
               <input
                 placeholder="0.01 ETH"
                 type="text"
+                disabled={!canPost?.canPost}
                 value={price}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -323,9 +345,16 @@ export function ImageUploadCard() {
           {/* Upload Button */}
           <button
             onClick={async() => await handleUpload()}
+            disabled={!canPost?.canPost}
             className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
           >
-            <Send className="text-blue-500 dark:text-blue-300" size={25} />
+            {
+              canPost?.canPost ? (
+                <Send className="text-blue-500 dark:text-blue-300" size={25} />
+              ) : (
+                <span className="text-blue-500 dark:text-blue-300">Moment Sharable In {canPost?.toNext}</span>
+              )
+            }
           </button>
         </div>
       </div>
