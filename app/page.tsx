@@ -1,6 +1,48 @@
+"use client"
+
 import Image from "next/image";
+import { useEffect } from "react";
+import { getFarcasterUser } from "./backend/farcasterUser";
+import sdk from "@farcaster/frame-sdk"
+import { useFarcasterStore } from "./store/useFarcasterStore";
+
 
 export default function Home() {
+  const { setUser, setLoading } = useFarcasterStore()
+
+  useEffect(() => {
+    // farcaster user data
+    const getUser = async() => {
+      let userFid: number | null = null
+
+      // Try to get FID from Frame SDK first
+      try {
+        const context = await sdk.context
+        userFid = context.user?.fid || null
+      } catch (error) {
+        console.log('Not in Farcaster context')
+      }
+
+      // Fallback to mock FID if not in Farcaster
+      if (!userFid && process.env.NEXT_PUBLIC_MOCK_FID) {
+        userFid = parseInt(process.env.NEXT_PUBLIC_MOCK_FID)
+        console.log('Using mock FID:', userFid)
+      }
+
+      try {
+        if(userFid) {
+          const userData = await getFarcasterUser(userFid)
+          setUser(userData)
+        }
+      } catch (error) {
+        console.error('Error loading Farcaster user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    getUser()
+  }, [setUser])
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
