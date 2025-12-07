@@ -5,44 +5,58 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
-import { useConnection } from 'wagmi'
+import { getEthPrice } from "../backend/price"
+import { useConnection, Config } from 'wagmi'
+import { simulateContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
+import { parseEther } from "viem"
 import { getCreatorMomentsCount } from "../blockchain/getterHooks"
+import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core"
+import { config } from "@/utils/wagmi"
+import { useFarcasterStore } from "../store/useFarcasterStore"
 
 export function ImageUploadCard() {
   const route = useRouter()
   const { isConnected, address } = useConnection()
+  const user = useFarcasterStore((state) => state.user)
 
   console.log(`address: ${address} ${isConnected}`)
 
   const [caption, setCaption] = useState("")
   const [price, setPrice] = useState("");
+  const [maxsupply, setMaxsupply] = useState("");
   const [inUsd, setInUsd] = useState("0")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [image, setImage] = useState<File | null>(null)
   const [emptyImage, setEmptyImage] = useState(false)
   const [emptyCaption, setEmptyCaption] = useState(false)
   const [emptyPrice, setEmptyPrice] = useState(false)
+  const [emptySupply, setEmptySupply] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isError, setIsError] = useState(false)
   const [momentCount, setMomentCount] = useState(0)
+  const [maxSupplyLimit, setMaxSupplyLimit] = useState(0)
 
+  // Image Size
   const MIN_WIDTH = 1080
   const MAX_WIDTH = 5000
   const MIN_HEIGHT = 1080
   const MAX_HEIGHT = 5000
 
-  const userName = "mokuakaleb";
-
-  // moment count
   useEffect(() => {
+    // moment count
     const getCount = async () => {
-      const count = await getCreatorMomentsCount(address as `0x${string}`);
-      setMomentCount(count + 1)
+      try {
+        const count = await getCreatorMomentsCount(address as `0x${string}`);
+        setMomentCount(count + 1)
+      } catch(error) {
+        console.log('Error fetching user moment count:', error)
+      }
     }
-
     getCount()
+
+    if(user) setMaxSupplyLimit(user.followerCount)
   }, []);
 
   // Image
@@ -93,9 +107,16 @@ export function ImageUploadCard() {
 
   // ETH to USD
   useEffect(() => {
-    const ethInUsd = 3456;
-    const amountPrice = Number(price) * ethInUsd;
-    setInUsd(amountPrice.toFixed(2))
+    const ethInUsd = async () => {
+      const usdPrice = await getEthPrice()
+      if(usdPrice) {
+        const amountPrice = Number(price) * usdPrice;
+        setInUsd(amountPrice.toFixed(2))
+      } 
+      console.log(`eth price: ${usdPrice}`)
+    }
+
+    ethInUsd()
   }, [price]);
 
   // Close success
@@ -112,34 +133,44 @@ export function ImageUploadCard() {
     if (!selectedImage || !caption || !price) {
       if(!selectedImage) setEmptyImage(true);
       if(!caption) setEmptyCaption(true);
-      if(!price) setEmptyPrice(true);
+      if(!price || Number(price) == 0) setEmptyPrice(true);
+      if(!maxsupply || Number(maxsupply) == 0) setEmptySupply(true);
       return
     }
-    console.log("Uploading:", { caption, price })
+    console.log("Uploading:", { caption, price, maxsupply })
 
     setIsUploading(true)
 
     try {
+      // new Promise(resolve => setTimeout(resolve, 5000))
       // Create FormData
       const formData = new FormData()
       image && formData.append('image', image)
       formData.append('caption', caption)
-      formData.append('creator', userName)
+      user && formData.append('creator', user?.username)
       formData.append('momentCount', momentCount.toString())
 
       // Call server action
-      const result = await uploadImage(formData)
+      const response = await uploadImage(formData)
       // check error
-      if(!result.success) throw new Error("Image Upload Failed!");
+      if(!response.success) throw new Error("Image Upload Failed!");
 
       // call contract function
-      
+      const creators: string[] = []
+      const { request } = await simulateContract(config as Config, {
+        abi: RARE24_CONTRACT_ABI,
+        address: RARE24_CONTRACT_ADDRESS,
+        functionName: 'uploadNft',
+        args: [response.message, parseEther(price), BigInt(maxsupply), creators],
+      })
+      const hash = await writeContract(config as Config, request)
+      const receipt = await waitForTransactionReceipt(config as Config, { hash });
 
-      if (result.success) {
-        setIsUploading(false)
-        setIsSuccess(true)
-        alert(result.message)
-      }
+      if (!receipt) throw new Error("uploadNFT Failed!")
+      
+      // Update state
+      setIsUploading(false)
+      setIsSuccess(true)
     } catch (error) {
       console.error("Upload error:", error)
       alert("Upload failed. Please try again.")
@@ -240,8 +271,36 @@ export function ImageUploadCard() {
             rows={4}
           />
 
+          {/* Max Supply */}
+          <div>
+            <p className="text-sm my-2 dark:text-gray-400 text-gray-800">
+              Total Supply <span className="text-xs">{`(Your Max Supply Is ${maxSupplyLimit})`}</span>
+            </p>
+            <label className={`flex items-center justify-between gap-2 cursor-pointer p-2 border ${emptySupply ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg text-lg`}>
+              <input
+                placeholder="10"
+                type="text"
+                value={maxsupply}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*$/.test(val)) {
+                    if (Number(val) > maxSupplyLimit) 
+                      setMaxsupply(maxSupplyLimit.toString())
+                    else
+                      setMaxsupply(val)
+                  };
+                  setEmptySupply(false)
+                }}
+                className="px-4 py-3 w-full outline-none"
+              />
+            </label>
+          </div>
+
           {/* Price */}
           <div>
+            <p className="text-sm my-2 dark:text-gray-400 text-gray-800">
+              Price Per Token  <span className="text-xs">(Minimum is 0.001 ETH)</span>
+            </p>
             <label className={`flex items-center justify-between gap-2 cursor-pointer p-2 border ${emptyPrice ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg text-lg`}>
               <input
                 placeholder="0.01 ETH"
@@ -259,9 +318,6 @@ export function ImageUploadCard() {
               />
               <p className={`text-lg pr-2 dark:text-gray-400 text-gray-800`}>${inUsd}</p>
             </label>
-            <p className="text-xs text-center my-2 dark:text-gray-400 text-gray-800">
-              * Minimum is 0.001 ETH
-            </p>
           </div>
 
           {/* Upload Button */}
