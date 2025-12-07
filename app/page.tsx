@@ -6,7 +6,6 @@ import { getFarcasterUser } from "./backend/farcasterUser";
 import sdk from "@farcaster/frame-sdk"
 import { useFarcasterStore } from "./store/useFarcasterStore";
 
-
 export default function Home() {
   const { setUser, setLoading } = useFarcasterStore()
 
