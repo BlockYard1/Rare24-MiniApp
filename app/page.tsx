@@ -1,8 +1,16 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState} from 'react';
+
+export default function Page() {
+  const [isLiked, setIsLiked] = useState(false);
+
+  const toggleLike = () => {
+    setIsLiked(!isLiked);
+  };
+
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center pt-4 px-4">
+    <div className="min-h-screen bg-black flex items-start justify-center pt-4 px-4 pb-20">
       <div className="w-full max-w-md">
         {/* Post Header */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
