@@ -1,14 +1,6 @@
-'use client';
-import {  useState } from 'react';
+import Image from "next/image";
 
-
-export default function Page() {
-  const [isLiked, setIsLiked] = useState(false);
-
-  const toggleLike = () => {
-    setIsLiked(!isLiked);
-  };
-
+export default function Home() {
   return (
     <div className="min-h-screen bg-black flex items-start justify-center pt-4 px-4">
       <div className="w-full max-w-md">

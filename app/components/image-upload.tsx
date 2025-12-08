@@ -3,30 +3,80 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import NextImage from "next/image"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
+import { getEthPrice } from "../backend/price"
+import { useConnection, Config } from 'wagmi'
+import { simulateContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
+import { parseEther } from "viem"
+import { getCreatorMomentsCount, checkIfCanPost } from "../blockchain/getterHooks"
+import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core"
+import { config } from "@/utils/wagmi"
+import { useFarcasterStore } from "../store/useFarcasterStore"
+import { CanPost } from "../types/index.t"
 
 export function ImageUploadCard() {
   const route = useRouter()
+  const { isConnected, address } = useConnection()
+  const user = useFarcasterStore((state) => state.user)
+
+  console.log(`address: ${address} ${isConnected}`)
 
   const [caption, setCaption] = useState("")
   const [price, setPrice] = useState("");
+  const [maxsupply, setMaxsupply] = useState("");
   const [inUsd, setInUsd] = useState("0")
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [image, setImage] = useState<File | null>(null)
   const [emptyImage, setEmptyImage] = useState(false)
   const [emptyCaption, setEmptyCaption] = useState(false)
   const [emptyPrice, setEmptyPrice] = useState(false)
+  const [emptySupply, setEmptySupply] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isError, setIsError] = useState(false)
+  const [momentCount, setMomentCount] = useState(0)
+  const [maxSupplyLimit, setMaxSupplyLimit] = useState(0)
+  const [canPost, setCanPost] = useState<CanPost | null>(null)
 
+  // Image Size
   const MIN_WIDTH = 1080
   const MAX_WIDTH = 5000
   const MIN_HEIGHT = 1080
   const MAX_HEIGHT = 5000
+
+  useEffect(() => {
+    // moment count
+    const getCount = async() => {
+      try {
+        if(user){
+          const count = await getCreatorMomentsCount(user?.username);
+          setMomentCount(count)
+          // console.log(user?.username, " + ", count)
+        }
+      } catch(error) {
+        console.log('Error fetching user moment count:', error)
+      }
+    }
+    getCount()
+
+    // check if can post
+    const post = async() => {
+      try{
+        if(user){
+          const _canPost = await checkIfCanPost(user?.username)
+          setCanPost(_canPost)
+        }
+      } catch(error) {
+        console.log('Error checking if can post:', error)
+      }
+    }
+    post()
+
+    if(user) setMaxSupplyLimit(user.followerCount)
+  }, [user]);
 
   // Image
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +94,7 @@ export function ImageUploadCard() {
     }
 
     // Create an image element to check dimensions
-    const img = new Image()
+    const img = new window.Image()
     const objectUrl = URL.createObjectURL(file)
 
     img.onload = () => {
@@ -76,9 +126,16 @@ export function ImageUploadCard() {
 
   // ETH to USD
   useEffect(() => {
-    const ethInUsd = 3456;
-    const amountPrice = Number(price) * ethInUsd;
-    setInUsd(amountPrice.toFixed(2))
+    const ethInUsd = async () => {
+      const usdPrice = await getEthPrice()
+      if(usdPrice) {
+        const amountPrice = Number(price) * usdPrice;
+        setInUsd(amountPrice.toFixed(2))
+      } 
+      // console.log(`eth price: ${usdPrice}`)
+    }
+
+    ethInUsd()
   }, [price]);
 
   // Close success
@@ -88,6 +145,7 @@ export function ImageUploadCard() {
     setSelectedImage(null)
     setCaption("")
     setPrice("")
+    setMaxsupply("")
   }
 
   // Upload
@@ -95,37 +153,50 @@ export function ImageUploadCard() {
     if (!selectedImage || !caption || !price) {
       if(!selectedImage) setEmptyImage(true);
       if(!caption) setEmptyCaption(true);
-      if(!price) setEmptyPrice(true);
+      if(!price || Number(price) == 0) setEmptyPrice(true);
+      if(!maxsupply || Number(maxsupply) == 0) setEmptySupply(true);
       return
     }
-    console.log("Uploading:", { caption, price })
+    console.log("Uploading:", { caption, price, maxsupply, momentCount })
 
     setIsUploading(true)
 
     try {
-      // await new Promise(resolve => setTimeout(resolve, 10000))
-
+      // new Promise(resolve => setTimeout(resolve, 5000))
       // Create FormData
       const formData = new FormData()
       if (image) {
         formData.append('image', image)
       }
       formData.append('caption', caption)
-      formData.append('price', price)
+      if (user) {
+        formData.append('creator', user.username)
+      }
+      formData.append('momentCount', momentCount.toString())
 
       // Call server action
-      const result = await uploadImage(formData)
+      const response = await uploadImage(formData)
+      // check error
+      if(!response.success) throw new Error("Image Upload Failed!");
 
-      if (result.success) {
-        setIsUploading(false)
-        setIsSuccess(true)
-        alert(result.message)
-      } else {
-        alert(result.message)
-      }
+      // call contract function
+      const creators: string[] = []
+      const { request } = await simulateContract(config as Config, {
+        abi: RARE24_CONTRACT_ABI,
+        address: RARE24_CONTRACT_ADDRESS,
+        functionName: 'uploadNft',
+        args: [response.message, parseEther(price), BigInt(maxsupply), user?.username, creators]
+      })
+      const hash = await writeContract(config as Config, request)
+      const receipt = await waitForTransactionReceipt(config as Config, { hash });
+
+      if (!receipt) throw new Error("uploadNFT Failed!")
+      
+      // Update state
+      setIsUploading(false)
+      setIsSuccess(true)
     } catch (error) {
       console.error("Upload error:", error)
-      alert("Upload failed. Please try again.")
       setIsUploading(false)
       setIsError(true)
     }
@@ -138,7 +209,7 @@ export function ImageUploadCard() {
         {/* Image Preview Area - grows to fill space */}
           {selectedImage ? (
             <>
-              <Image
+              <NextImage
                 src={selectedImage}
                 alt="Selected"
                 width={1080}
@@ -187,6 +258,7 @@ export function ImageUploadCard() {
               <input 
                 type="file" 
                 accept="image/*" 
+                disabled={!canPost?.canPost}
                 onChange={handleImageSelect} 
                 className="hidden" 
               />
@@ -215,6 +287,7 @@ export function ImageUploadCard() {
           {/* Caption Textarea */}
           <textarea
             placeholder="Add caption ..."
+            disabled={!canPost?.canPost}
             value={caption}
             onChange={(e) => {
               setCaption(e.target.value)
@@ -224,12 +297,42 @@ export function ImageUploadCard() {
             rows={4}
           />
 
+          {/* Max Supply */}
+          <div>
+            <p className="text-sm my-2 dark:text-gray-400 text-gray-800">
+              Total Supply <span className="text-xs">{`(Your Max Supply Is ${maxSupplyLimit})`}</span>
+            </p>
+            <label className={`flex items-center justify-between gap-2 cursor-pointer p-2 border ${emptySupply ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg text-lg`}>
+              <input
+                placeholder="10"
+                type="text"
+                disabled={!canPost?.canPost}
+                value={maxsupply}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*$/.test(val)) {
+                    if (Number(val) > maxSupplyLimit) 
+                      setMaxsupply(maxSupplyLimit.toString())
+                    else
+                      setMaxsupply(val)
+                  };
+                  setEmptySupply(false)
+                }}
+                className="px-4 py-3 w-full outline-none"
+              />
+            </label>
+          </div>
+
           {/* Price */}
           <div>
+            <p className="text-sm my-2 dark:text-gray-400 text-gray-800">
+              Price Per Token  <span className="text-xs">(Minimum is 0.001 ETH)</span>
+            </p>
             <label className={`flex items-center justify-between gap-2 cursor-pointer p-2 border ${emptyPrice ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg text-lg`}>
               <input
                 placeholder="0.01 ETH"
                 type="text"
+                disabled={!canPost?.canPost}
                 value={price}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -243,17 +346,21 @@ export function ImageUploadCard() {
               />
               <p className={`text-lg pr-2 dark:text-gray-400 text-gray-800`}>${inUsd}</p>
             </label>
-            <p className="text-xs text-center my-2 dark:text-gray-400 text-gray-800">
-              * Minimum is 0.001 ETH
-            </p>
           </div>
 
-          {/* Upload Button */}
-          <button
-            onClick={async() => await handleUpload()}
-            className="w-full px-4 py-3 bg-linear-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
-          >
-            <Send className="text-blue-500 dark:text-blue-300" size={25} />
+{/* Upload Button */}
+<button
+  onClick={async() => await handleUpload()}
+  disabled={!canPost?.canPost}
+  className="w-full px-4 py-3 bg-linear-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
+>
+            {
+              canPost?.canPost ? (
+                <Send className="text-blue-500 dark:text-blue-300" size={25} />
+              ) : (
+                <span className="text-blue-500 dark:text-blue-300">Moment Sharable In {canPost?.toNext}</span>
+              )
+            }
           </button>
       </div>
     </div>
