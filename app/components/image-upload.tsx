@@ -3,6 +3,7 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
 
@@ -106,7 +107,9 @@ export function ImageUploadCard() {
 
       // Create FormData
       const formData = new FormData()
-      image && formData.append('image', image)
+      if (image) {
+        formData.append('image', image)
+      }
       formData.append('caption', caption)
       formData.append('price', price)
 
@@ -133,12 +136,13 @@ export function ImageUploadCard() {
       {/* Main Content - fills available space */}
       <div className="flex-1 flex flex-col gap-4 p-4 overflow-auto">
         {/* Image Preview Area - grows to fill space */}
-        <div className={`flex-1 flex flex-col items-center justify-center ${emptyImage && "border-2 border-dashed border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10 border-border rounded-lg"} ${(isUploading || isError || isSuccess) ? "" : "border-2 border-dashed  border-teal-500 dark:border-teal-800 dark:bg-[#222529] bg-teal-100/10 border-border rounded-lg"}`}>
           {selectedImage ? (
             <>
-              <img
+              <Image
                 src={selectedImage}
                 alt="Selected"
+                width={1080}
+                height={1080}
                 className={`w-full ${(isUploading || isError || isSuccess) ? "h-3/4" : "h-full"} object-contain rounded-lg`}
               />
               {
@@ -159,7 +163,7 @@ export function ImageUploadCard() {
                     </span>
                     <span className="text-lg font-semibold">Failed to Turn Moment Into NFT.</span>
                     <button onClick={() => closeStatus()} className="px-3 py-2 bg-red-600 rounded-lg text-white">
-                      Let's Try Again
+                      Let&apos;s Try Again
                     </button>
                   </div>
                 )
@@ -179,7 +183,7 @@ export function ImageUploadCard() {
               }
             </>
           ) : (
-            <label className={`flex flex-col items-center gap-2 cursor-pointer p-8`}>
+            <label className={`flex flex-col items-center gap-2 cursor-pointer p-8 border ${emptyImage ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg`}>
               <input 
                 type="file" 
                 accept="image/*" 
@@ -247,11 +251,10 @@ export function ImageUploadCard() {
           {/* Upload Button */}
           <button
             onClick={async() => await handleUpload()}
-            className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
+            className="w-full px-4 py-3 bg-linear-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
           >
             <Send className="text-blue-500 dark:text-blue-300" size={25} />
           </button>
-        </div>
       </div>
     </div>
   )
