@@ -6,6 +6,7 @@ import { useFarcasterStore } from "@/app/store/useFarcasterStore";
 import { CreatorNftData, NFTDetails } from "@/app/types/index.t";
 import { getCreatorMoments } from "@/app/blockchain/getterHooks";
 import { useConnection } from 'wagmi'
+import { getUsersTokenIds } from "@/app/backend/alchemy";
 
 export default function Profile() {
   const user = useFarcasterStore((state) => state.user)
@@ -13,6 +14,7 @@ export default function Profile() {
 
   const [activeTab, setActiveTab] = useState<"moments" | "holding">("moments")
   const [moments, setMoments] = useState<CreatorNftData | null>(null)
+  const [userNfts, setUserNfts] = useState<NFTDetails[]>([])
   const [displayItems, setDisplayItems] = useState<NFTDetails[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -23,23 +25,21 @@ export default function Profile() {
       if(user){
         const data = await getCreatorMoments(user?.username, address as `0x${string}`)
         setMoments(data)
+        const data_ = await getUsersTokenIds(address as `0x${string}`)
+        setUserNfts(data_)
       }
       setLoading(false)
     }
     fetchData()
   }, [])
 
-  const holdingItems = Array(0)
-    .fill(null)
-    .map((_, i) => ({ id: `holding-${i}` }))
-
   // Update displayItems
   useEffect(() => {
     if(activeTab === "moments")
       setDisplayItems(moments?.Nfts ?? [])
     else 
-      setDisplayItems([])
-  }, [activeTab, moments])
+      setDisplayItems(userNfts)
+  }, [activeTab, moments, userNfts])
 
 
   return (
@@ -116,7 +116,7 @@ export default function Profile() {
                   {
                     displayItems.map((item) => (
                       <div
-                        key={item.createdAt}
+                        key={item.tokenId}
                         className="aspect-square rounded-md border-2 border-foreground/20 hover:border-foreground/40 transition-colors bg-card cursor-pointer relative overflow-hidden"
                       >
                         <img 
@@ -130,7 +130,7 @@ export default function Profile() {
                         
                         {/* Number at bottom left */}
                         <div className="absolute bottom-2 left-2 text-white font-semibold text-lg z-10">
-                          {item.totalMinted}
+                          {item.totalMint_balance}
                         </div>
                       </div>
                     ))
