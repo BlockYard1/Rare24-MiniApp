@@ -14,15 +14,27 @@ export interface CanPost {
 }
 
 export interface NFTDetails {
+    tokenId: number;
+    totalMint_balance: string;
     imageUrl: string;
-    price: string;
-    createdAt: string;
-    totalMinted: string;
-    maxSupply: string;
 }
 
 export interface CreatorNftData {
     Nfts: NFTDetails[];
     mints: number;
     earning: string;
+}
+
+interface NFTMetadata {
+    originalUrl: string;
+}
+
+interface OwnedNFT {
+    tokenId: string;
+    balance: string;
+    image: NFTMetadata;
+}
+
+export interface AlchemyNFTResponse {
+    ownedNfts: OwnedNFT[];
 }
