@@ -42,6 +42,7 @@ export async function uploadImage(formData: FormData) {
     
     return { success: true, message: metadataUrl }
   } catch (error) {
+    console.log('Error >>> ', error)
     return { success: false, message: "Upload failed" }
   }
 }
