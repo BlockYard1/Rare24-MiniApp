@@ -86,6 +86,7 @@ export async function getCreatorMoments(creator_username: string, creator_addres
 
             if(nft) {
                 nftDetails.push({
+                    tokenId: Number(tokenIdArray[i]),
                     metadataURI: nft.metadataURI as string,
                     price: formatEther(nft.price),
                     createdAt: formatDate(Number(nft.createdAt)),
@@ -100,11 +101,9 @@ export async function getCreatorMoments(creator_username: string, creator_addres
 
     const formattedPhotos = await Promise.all(
         nftDetails.map(async (nft) => ({
-            imageUrl: await fetchImageFromMetadata(nft.metadataURI), // fetch actual image
-            price: nft.price,
-            createdAt: nft.createdAt,
-            totalMinted: nft.totalMinted,
-            maxSupply: nft.maxSupply
+            tokenId: nft.tokenId,
+            totalMint_balance: nft.totalMinted,
+            imageUrl: await fetchImageFromMetadata(nft.metadataURI)
         }))
     );
 
