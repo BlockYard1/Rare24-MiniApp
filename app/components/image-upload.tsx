@@ -3,7 +3,6 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import NextImage from "next/image"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
 import { getEthPrice } from "../backend/price"
@@ -76,7 +75,7 @@ export function ImageUploadCard() {
     post()
 
     if(user) setMaxSupplyLimit(user.followerCount)
-  }, [user]);
+  }, []);
 
   // Image
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +93,7 @@ export function ImageUploadCard() {
     }
 
     // Create an image element to check dimensions
-    const img = new window.Image()
+    const img = new Image()
     const objectUrl = URL.createObjectURL(file)
 
     img.onload = () => {
@@ -165,13 +164,9 @@ export function ImageUploadCard() {
       // new Promise(resolve => setTimeout(resolve, 5000))
       // Create FormData
       const formData = new FormData()
-      if (image) {
-        formData.append('image', image)
-      }
+      image && formData.append('image', image)
       formData.append('caption', caption)
-      if (user) {
-        formData.append('creator', user.username)
-      }
+      user && formData.append('creator', user?.username)
       formData.append('momentCount', momentCount.toString())
 
       // Call server action
@@ -207,13 +202,12 @@ export function ImageUploadCard() {
       {/* Main Content - fills available space */}
       <div className="flex-1 flex flex-col gap-4 p-4 overflow-auto">
         {/* Image Preview Area - grows to fill space */}
+        <div className={`flex-1 flex flex-col items-center justify-center ${emptyImage && "border-2 border-dashed border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10 border-border rounded-lg"} ${(isUploading || isError || isSuccess) ? "" : "border-2 border-dashed  border-teal-500 dark:border-teal-800 dark:bg-[#222529] bg-teal-100/10 border-border rounded-lg"}`}>
           {selectedImage ? (
             <>
-              <NextImage
+              <img
                 src={selectedImage}
                 alt="Selected"
-                width={1080}
-                height={1080}
                 className={`w-full ${(isUploading || isError || isSuccess) ? "h-3/4" : "h-full"} object-contain rounded-lg`}
               />
               {
@@ -234,7 +228,7 @@ export function ImageUploadCard() {
                     </span>
                     <span className="text-lg font-semibold">Failed to Turn Moment Into NFT.</span>
                     <button onClick={() => closeStatus()} className="px-3 py-2 bg-red-600 rounded-lg text-white">
-                      Let&apos;s Try Again
+                      Let's Try Again
                     </button>
                   </div>
                 )
@@ -254,7 +248,7 @@ export function ImageUploadCard() {
               }
             </>
           ) : (
-            <label className={`flex flex-col items-center gap-2 cursor-pointer p-8 border ${emptyImage ? "border-red-500 dark:border-red-800 dark:bg-red-500/10 bg-red-100/10" : "dark:bg-[#222529] bg-teal-500/10 border-teal-700"} rounded-lg`}>
+            <label className={`flex flex-col items-center gap-2 cursor-pointer p-8`}>
               <input 
                 type="file" 
                 accept="image/*" 
@@ -348,12 +342,12 @@ export function ImageUploadCard() {
             </label>
           </div>
 
-{/* Upload Button */}
-<button
-  onClick={async() => await handleUpload()}
-  disabled={!canPost?.canPost}
-  className="w-full px-4 py-3 bg-linear-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
->
+          {/* Upload Button */}
+          <button
+            onClick={async() => await handleUpload()}
+            disabled={!canPost?.canPost}
+            className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
+          >
             {
               canPost?.canPost ? (
                 <Send className="text-blue-500 dark:text-blue-300" size={25} />
@@ -362,6 +356,7 @@ export function ImageUploadCard() {
               )
             }
           </button>
+        </div>
       </div>
     </div>
   )

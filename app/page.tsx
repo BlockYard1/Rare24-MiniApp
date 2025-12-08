@@ -1,57 +1,107 @@
 "use client"
 
-import { useState} from 'react';
+import Image from "next/image";
+import { useEffect } from "react";
+import { getFarcasterUser } from "./backend/farcasterUser";
+import sdk from "@farcaster/frame-sdk"
+import { useFarcasterStore } from "./store/useFarcasterStore";
 
-export default function Page() {
-  const [isLiked, setIsLiked] = useState(false);
 
-  const toggleLike = () => {
-    setIsLiked(!isLiked);
-  };
+export default function Home() {
+  const { setUser, setLoading } = useFarcasterStore()
+
+  useEffect(() => {
+    // farcaster user data
+    const getUser = async() => {
+      let userFid: number | null = null
+
+      // Try to get FID from Frame SDK first
+      try {
+        const context = await sdk.context
+        userFid = context.user?.fid || null
+      } catch (error) {
+        console.log('Not in Farcaster context')
+      }
+
+      // Fallback to mock FID if not in Farcaster
+      if (!userFid && process.env.NEXT_PUBLIC_MOCK_FID) {
+        userFid = parseInt(process.env.NEXT_PUBLIC_MOCK_FID)
+        console.log('Using mock FID:', userFid)
+      }
+
+      try {
+        if(userFid) {
+          const userData = await getFarcasterUser(userFid)
+          setUser(userData)
+        }
+      } catch (error) {
+        console.error('Error loading Farcaster user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    getUser()
+  }, [setUser])
 
   return (
-    <div className="min-h-screen bg-black flex items-start justify-center pt-4 px-4 pb-20">
-      <div className="w-full max-w-md">
-        {/* Post Header */}
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-12 h-12 rounded-full bg-gray-600 shrink-0"></div>
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-semibold text-white">user123</p>
-            </div>
-          </div>
-          <span className="text-sm text-gray-500 shrink-0">17:45</span>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={100}
+          height={20}
+          priority
+        />
+        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
+          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+            To get started, edit the page.tsx file.
+          </h1>
+          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+            Looking for a starting point or more instructions? Head over to{" "}
+            <a
+              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Templates
+            </a>{" "}
+            or the{" "}
+            <a
+              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Learning
+            </a>{" "}
+            center.
+          </p>
         </div>
-
-        {/* Image Placeholder */}
-        <div className="w-full bg-linear-to-b from-gray-900 to-blue-900 rounded-xl flex items-center justify-center mb-6 aspect-square overflow-hidden">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-20 h-20 border-2 border-gray-500 rounded-xl flex items-center justify-center">
-              <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="w-5 h-5 rounded-full border-2 border-gray-500"></div>
-          </div>
-        </div>
-
-        {/* Interaction Bar */}
-        <div className="flex items-center gap-4 pb-4 border-b border-gray-700">
-          <button
-            onClick={toggleLike}
-            className="flex items-center transition-all duration-200 hover:scale-110 shrink-0"
+        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+          <a
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <svg className="w-7 h-7" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" className={isLiked ? "text-red-500" : "text-gray-400"} />
-            </svg>
-          </button>
-          <span className="text-sm text-gray-300 flex-1">Description about this rare moment</span>
-          <div className="flex items-center gap-2 text-gray-400 shrink-0">
-            <span className="text-sm">◆</span>
-            <span className="text-sm font-medium">0.1</span>
-          </div>
+            <Image
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={16}
+              height={16}
+            />
+            Deploy Now
+          </a>
+          <a
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors hover:border-transparent hover:bg-black/4 dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Documentation
+          </a>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
