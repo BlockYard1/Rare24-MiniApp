@@ -7,10 +7,12 @@ import { CreatorNftData, NFTDetails } from "@/app/types/index.t";
 import { getCreatorMoments } from "@/app/blockchain/getterHooks";
 import { useConnection } from 'wagmi'
 import { getUsersTokenIds } from "@/app/backend/alchemy";
+import { useRouter } from "next/navigation";
 
 export default function Profile() {
   const user = useFarcasterStore((state) => state.user)
   const { address } = useConnection()
+  const route = useRouter()
 
   const [activeTab, setActiveTab] = useState<"moments" | "holding">("moments")
   const [moments, setMoments] = useState<CreatorNftData | null>(null)
@@ -112,11 +114,12 @@ export default function Profile() {
           <div className="">
             {
               (displayItems.length ?? 0)> 0 ? (
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-2 gap-1">
                   {
                     displayItems.map((item) => (
                       <div
                         key={item.tokenId}
+                        onClick={() => route.push(`/nft/${item.tokenId}`)}
                         className="aspect-square rounded-md border-2 border-foreground/20 hover:border-foreground/40 transition-colors bg-card cursor-pointer relative overflow-hidden"
                       >
                         <img 
@@ -126,10 +129,10 @@ export default function Profile() {
                         />
                         
                         {/* Fade away shadow at bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 right-0 h-30 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
                         
                         {/* Number at bottom left */}
-                        <div className="absolute bottom-2 left-2 text-white font-semibold text-lg z-10">
+                        <div className="absolute bottom-1 left-1 text-white font-semibold text-xl z-10">
                           {item.totalMint_balance}
                         </div>
                       </div>
