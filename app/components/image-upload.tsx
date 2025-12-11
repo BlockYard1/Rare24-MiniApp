@@ -312,7 +312,7 @@ export function ImageUploadCard() {
                   };
                   setEmptySupply(false)
                 }}
-                className="px-4 py-3 w-full outline-none"
+                className="px-4 py-3 w-full outline-none font-semibold text-gray-700 dark:text-gray-300"
               />
             </label>
           </div>
@@ -336,9 +336,9 @@ export function ImageUploadCard() {
                 onBlur={() => {
                   if (Number(price) < 0.001) setPrice("0.001");
                 }}
-                className="px-4 py-3 w-full outline-none"
+                className="px-4 py-3 w-full outline-none font-semibold text-gray-700 dark:text-gray-300"
               />
-              <p className={`text-lg pr-2 dark:text-gray-400 text-gray-800`}>${inUsd}</p>
+              <p className={`text-lg pr-2 dark:text-gray-400 text-gray-800 font-semibold`}>${inUsd}</p>
             </label>
           </div>
 
