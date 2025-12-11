@@ -25,7 +25,7 @@ export async function getUsersTokenIds(userAddress: `0x${string}`): Promise<NFTD
             imageUrl: nft.image.originalUrl
         }))
 
-        return formattedData
+        return formattedData.reverse()
     } catch (error) {
         console.error(error);
         return []
