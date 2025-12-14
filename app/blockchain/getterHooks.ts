@@ -4,14 +4,15 @@ import { RARE24_CONTRACT_ADDRESS, RARE24_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDR
 import { readContract } from "@wagmi/core";
 import { config } from "@/utils/wagmi";
 import { Config } from "wagmi";
-import { formatEther } from "viem";
-import { createPublicClient, http } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { formatEther, parseEther } from "viem";
+import { getAllFollowings } from "../backend/farcasterUser";
+import { getUsersTokenIds } from "../backend/alchemy";
+import { NFTDetails } from "../types/index.t";
 
-const publicClient = createPublicClient({
-    chain: baseSepolia,
-    transport: http(process.env.BASE_SEPOLIA_RPC)
-});
+// const publicClient = createPublicClient({
+//     chain: baseSepolia,
+//     transport: http(process.env.BASE_SEPOLIA_RPC)
+// });
 
 /* RARE24 CONTRACT */
 
@@ -350,4 +351,272 @@ function getTimeRemaining(futureTimestamp: number) {
   } else {
     return `${seconds}s`;
   }
+}
+
+export async function getTokensListed() {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const MAX_LISTINGS = 20;
+
+    // Fetch listing counter
+    const listingCount = await readContract(config as Config, {
+        abi: MARKETPLACE_CONTRACT_ABI,
+        address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+        functionName: 'getListingIdCounter',
+        args: []
+    }) as bigint;
+
+    const count = Number(listingCount);
+    
+    // Fetch listings in parallel batches
+    const listingPromises = [];
+    for (let i = count; i > 0 && listingPromises.length < MAX_LISTINGS * 2; i--) {
+        listingPromises.push(
+            readContract(config as Config, {
+                abi: MARKETPLACE_CONTRACT_ABI,
+                address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+                functionName: 'getSaleListing',
+                args: [i]
+            }).then(listing => ({ listing, id: i }))
+        );
+    }
+
+    // Fetch all listings in parallel and filter
+    const allListings = await Promise.all(listingPromises);
+    const activeListings = allListings
+        .filter(({ listing }: any) => 
+            Number(listing.status) === 0 && 
+            currentTimestamp <= Number(listing.expiresAt)
+        )
+        .slice(0, MAX_LISTINGS)
+        .map(({ listing }) => listing);
+
+    // Fetch NFT details in parallel
+    const nftDetailsPromises = activeListings.map((listing: any) =>
+        readContract(config as Config, {
+            abi: RARE24_CONTRACT_ABI,
+            address: RARE24_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getPhotoDetails',
+            args: [listing.tokenId]
+        })
+    );
+
+    const detailsResults: any[] = await Promise.all(nftDetailsPromises);
+
+    // Fetch metadata in parallel
+    const metadataPromises = detailsResults.map((nft) => 
+        fetchMetadata(nft.metadataURI)
+    );
+
+    const metadataResults: any[] = await Promise.all(metadataPromises);
+
+    // Combine all data (FIX: your original had [0] instead of [i])
+    return activeListings.map((listing: any, i: number) => ({
+        listingId: listing.listingId as number,
+        tokenId: listing.tokenId as number,
+        seller: listing.sellerName as string,
+        price: formatEther(BigInt(listing.pricePerToken)),
+        amount: listing.amount as string,
+        sold: listing.sold  as string,
+        creator: detailsResults[i].creator as string,
+        imageUrl: metadataResults[i].image as string,
+        desc: metadataResults[i].desc as string
+    }));
+}
+
+export async function getSharedMoments(fid: number) {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const MAX_MOMENTS = 20;
+
+    // fetch accounts following
+    const following = await getAllFollowings(fid)
+    const followingSet = new Set(following) 
+
+    // Fetch listing counter
+    const momentCount = await readContract(config as Config, {
+        abi: RARE24_CONTRACT_ABI,
+        address: RARE24_CONTRACT_ADDRESS as `0x${string}`,
+        functionName: 'getTokenIdCounter',
+        args: []
+    }) as bigint;
+
+    const count = Number(momentCount);
+    
+    // Fetch Moments in parallel batches
+    const momentPromises = [];
+    for (let i = count; i > 0 && momentPromises.length < MAX_MOMENTS * 3; i--) {
+        momentPromises.push(
+            readContract(config as Config, {
+                abi: RARE24_CONTRACT_ABI,
+                address: RARE24_CONTRACT_ADDRESS as `0x${string}`,
+                functionName: 'getPhotoDetails',
+                args: [i]
+            }).then(moment => ({ moment, id: i }))
+        );
+    }
+
+    // Fetch all listings in parallel and filter
+    const allMoments = await Promise.all(momentPromises);
+    const activeMoments: any[] = allMoments
+        .filter(({ moment }: any) => {
+            const isActive = currentTimestamp <= Number(moment.expiresAt)
+            const isFromFollowing = followingSet.has(moment.creator.toLowerCase());
+            return isActive && isFromFollowing
+        })
+        .slice(0, MAX_MOMENTS)
+        .map(({ moment }) => moment);
+
+    // Fetch metadata in parallel
+    const metadataPromises = activeMoments.map((nft) => 
+        fetchMetadata(nft.metadataURI)
+    );
+
+    const metadataResults: any[] = await Promise.all(metadataPromises);
+
+    // Combine all data (FIX: your original had [0] instead of [i])
+    return activeMoments.map((moment: any, i: number) => ({
+        tokenId: moment.tokenId as number,
+        creator: moment.sellerName as string,
+        price: formatEther(BigInt(moment.price)),
+        amount: moment.maxSupply as string,
+        sold: moment.totalMinted  as string,
+        imageUrl: metadataResults[i].image as string,
+        desc: metadataResults[i].desc as string,
+        expires: moment.expiresAt as string
+    }));
+}
+
+export async function getUserOffersListings(username: string) {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+
+    // Fetch all base data in parallel
+    const [tokenListings, tokenOffers] = await Promise.all([
+        readContract(config as Config, {
+            abi: MARKETPLACE_CONTRACT_ABI,
+            address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getUsersListings',
+            args: [username]
+        }) as Promise<bigint[]>,
+        readContract(config as Config, {
+            abi: MARKETPLACE_CONTRACT_ABI,
+            address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getUserOffers',
+            args: [username]
+        }) as Promise<bigint[]>
+    ]);
+
+    // Process listings in parallel
+    const listings = tokenListings.reverse();
+    const listingPromises = listings.slice(0, 11).map(index =>
+        readContract(config as Config, {
+            abi: MARKETPLACE_CONTRACT_ABI,
+            address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getSaleListing',
+            args: [index]
+        }).then((nft: any) => ({
+            type: 'Listing',
+            tokenId: Number(nft.tokenId),
+            price: formatEther(nft.pricePerToken),
+            amount: Number(nft.amount),
+            sold_rec: Number(nft.sold),
+            expiresAt: formatDate(Number(nft.expiresAt)),
+            status: nft.status as number
+        }))
+    );
+    const listingResults = await Promise.all(listingPromises);
+
+    // Process offers in parallel
+    const offers = tokenOffers.reverse();
+    const offerPromises = offers.slice(0, 11).map(index =>
+        readContract(config as Config, {
+            abi: MARKETPLACE_CONTRACT_ABI,
+            address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getBuyOffer',
+            args: [index]
+        }).then((nft: any) => ({
+            type: 'Offer',
+            tokenId: Number(nft.tokenId),
+            price: formatEther(nft.offerPerToken),
+            amount: Number(nft.amount),
+            sold_rec: Number(nft.received),
+            expiresAt: formatDate(Number(nft.expiresAt)),
+            status: nft.status as number
+        }))
+    );
+    const offerResults = await Promise.all(offerPromises);
+
+    // merge arrays
+    const mergeResults = [...listingResults, ...offerResults]
+
+    // fetch Image & Urls
+    const nftPromises = mergeResults.map(obj =>
+        readContract(config as Config, {
+            abi: RARE24_CONTRACT_ABI,
+            address: RARE24_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getPhotoDetails',
+            args: [BigInt(obj.tokenId)]
+        }).then(async (nft: any) => {
+            const metadata = await fetchMetadata(nft.metadataURI);
+            
+            return {
+                ...obj,
+                ...metadata
+            };
+        })
+    );
+
+    return (await Promise.all(nftPromises)).filter(data => 
+        data.status === 0 && currentTimestamp <= Number(data.expiresAt)
+    );
+
+}
+
+export async function checkNotification(userAddress: `0x${string}`) {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const MAX_OFFERS = 20;
+
+    // get users holding
+    const [offerCount, tokenIds] = await Promise.all([
+        readContract(config as Config, {
+            abi: MARKETPLACE_CONTRACT_ABI,
+            address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'getOfferIdCounter',
+            args: []
+        }) as Promise<bigint>,
+        getUsersTokenIds(userAddress) as Promise<NFTDetails[]>
+    ])
+
+    const count = Number(offerCount);
+    const userTokenIds = new Set(
+        tokenIds.map(token => token.tokenId)
+    )
+    
+    // Fetch listings in parallel batches
+    const offerPromises = [];
+    for (let i = count; i > 0 && offerPromises.length < MAX_OFFERS * 2; i--) {
+        offerPromises.push(
+            readContract(config as Config, {
+                abi: MARKETPLACE_CONTRACT_ABI,
+                address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+                functionName: 'getBuyOffer',
+                args: [i]
+            }).then(offer => ({ offer }))
+        );
+    }
+
+    // Fetch all listings in parallel and filter
+    return (await Promise.all(offerPromises))
+        .filter(({ offer }: any) => 
+            Number(offer.status) === 0 && 
+            currentTimestamp < Number(offer.expiresAt) &&
+            userTokenIds.has(Number(offer.tokenId))
+        )
+        .slice(0, MAX_OFFERS)
+        .map((offer: any) => ({
+                tokenId: offer.tokenId as number,
+                buyer: offer.buyerName as string,
+                imageUrl: tokenIds.find(obj => obj.tokenId)?.imageUrl || '',
+                price: formatEther(offer.offerPerToken)
+            })
+        );
+
 }
