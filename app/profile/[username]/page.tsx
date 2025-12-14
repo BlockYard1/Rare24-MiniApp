@@ -1,24 +1,32 @@
 "use client"
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { LoaderCircle, Grid2x2X } from "lucide-react";
 import { useFarcasterStore } from "@/app/store/useFarcasterStore";
-import { CreatorNftData, NFTDetails } from "@/app/types/index.t";
-import { getCreatorMoments } from "@/app/blockchain/getterHooks";
-import { useConnection } from 'wagmi'
+import { CreatorNftData, NFTDetails, UserOfferlistings } from "@/app/types/index.t";
+import { getCreatorMoments, getUserOffersListings } from "@/app/blockchain/getterHooks";
+import { useConnection, Config } from 'wagmi'
 import { getUsersTokenIds } from "@/app/backend/alchemy";
 import { useRouter } from "next/navigation";
+import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
+import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "@/app/blockchain/core";
+import { config } from "@/utils/wagmi";
 
 export default function Profile() {
   const user = useFarcasterStore((state) => state.user)
   const { address } = useConnection()
   const route = useRouter()
 
-  const [activeTab, setActiveTab] = useState<"moments" | "holding">("moments")
+  const [activeTab, setActiveTab] = useState<"moments" | "holding" | "activity">("moments")
   const [moments, setMoments] = useState<CreatorNftData | null>(null)
   const [userNfts, setUserNfts] = useState<NFTDetails[]>([])
   const [displayItems, setDisplayItems] = useState<NFTDetails[]>([])
+  const [activity, setActivity] = useState<UserOfferlistings[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [process, setProcess] = useState(false)
 
   // Fetch user's NFT moments
   useEffect(() => {
@@ -29,6 +37,8 @@ export default function Profile() {
         setMoments(data)
         const data_ = await getUsersTokenIds(address as `0x${string}`)
         setUserNfts(data_)
+        const _data = await getUserOffersListings(user.username)
+        setActivity(_data)
       }
       setLoading(false)
     }
@@ -39,10 +49,71 @@ export default function Profile() {
   useEffect(() => {
     if(activeTab === "moments")
       setDisplayItems(moments?.Nfts ?? [])
-    else 
+    else if(activeTab === "holding")
       setDisplayItems(userNfts)
+    else {
+      setDisplayItems([])
+    }
+
   }, [activeTab, moments, userNfts])
 
+  const handleCancel = async(type: string, id: number) => {
+    try{
+      setProcess(true)
+
+      const { request } = await simulateContract(config as Config, {
+        abi: MARKETPLACE_CONTRACT_ABI,
+        address: MARKETPLACE_CONTRACT_ADDRESS,
+        functionName: type == 'Offer' ? 'cancelBuyOffer' : 'cancelListing',
+        args: [BigInt(id)]
+      })
+      const hash = await writeContract(config as Config, request)
+      const receipt = await waitForTransactionReceipt(config as Config, { hash });
+
+      if (!receipt) throw new Error("Couldn't Cancel!")
+      
+      setProcess(false)
+      setSuccess(true)
+    } catch(error) {
+      console.error("Error: ", error)
+      setProcess(false)
+      setError("Couldn't Cancel!")
+    } finally {
+      setTimeout(() => {
+        setError("")
+        setSuccess(false)
+      }, 5000)
+    }
+  }
+
+  const handleRefund = async(id: number) => {
+    try{
+      setProcess(true)
+
+      const { request } = await simulateContract(config as Config, {
+        abi: MARKETPLACE_CONTRACT_ABI,
+        address: MARKETPLACE_CONTRACT_ADDRESS,
+        functionName: 'refundBuyOffer',
+        args: [BigInt(id)]
+      })
+      const hash = await writeContract(config as Config, request)
+      const receipt = await waitForTransactionReceipt(config as Config, { hash });
+
+      if (!receipt) throw new Error("Couldn't Refund!")
+      
+      setProcess(false)
+      setSuccess(true)
+    } catch(error) {
+      console.error("Error: ", error)
+      setProcess(false)
+      setError("Couldn't Refund!")
+    } finally {
+      setTimeout(() => {
+        setError("")
+        setSuccess(false)
+      }, 5000)
+    }
+  }
 
   return (
     <main className="mt-20 mb-16">
@@ -108,6 +179,16 @@ export default function Profile() {
             >
               Holding
             </button>
+            <button
+              onClick={() => setActiveTab("holding")}
+              className={`pb-3 text-lg font-medium transition-colors ${
+                activeTab === "activity"
+                  ? "text-teal-700 border-b-2 border-teal-600 border-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Activity
+            </button>
           </div>
 
           {/* Grid of Items */}
@@ -140,20 +221,95 @@ export default function Profile() {
                   }
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center mt-20">
+                <>
                   {
-                    loading ? (
-                      <span className="animate-spin">
-                        <LoaderCircle size={60} className="text-teal-500/80"/>
-                      </span>
+                    activity.length > 0 ? (
+                      <div className="">
+                        {
+                          activity.map((item) => (
+                            <div 
+                              className="flex gap-4"
+                              key={item.tokenId}
+                            >
+                              {/* Image on the left - perfect square */}
+                              <div className="relative aspect-square w-32 shrink-0 overflow-hidden rounded-md">
+                                <Image 
+                                  src={item.image || "/placeholder.svg"} 
+                                  alt={item.id.toString()} 
+                                  fill 
+                                  className="object-cover" 
+                                  onClick={() => route.push(`/nft/${item.tokenId}`)}
+                                />
+                              </div>
+
+                              {/* Data on the right */}
+                              <div className="flex flex-1 flex-col justify-between">
+                                <div className="space-y-2">
+                                  <p className="font-medium text-foreground">{item.desc}</p>
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                    <div className="text-muted-foreground">Token ID:</div>
+                                    <div className="font-medium">#{item.tokenId}</div>
+
+                                    <div className="text-muted-foreground">Price:</div>
+                                    <div className="font-medium">{item.price}</div>
+
+                                    <div className="text-muted-foreground">Amount:</div>
+                                    <div className="font-medium">{item.amount}</div>
+
+                                    <div className="text-muted-foreground">Sold/Rec:</div>
+                                    <div className="font-medium">{item.sold_rec}</div>
+
+                                    <div className="text-muted-foreground">Expires:</div>
+                                    <div className="font-medium">{item.expiresAt}</div>
+
+                                    <div className="text-muted-foreground">Status:</div>
+                                    <div className="font-medium">{item.status === 1 ? "Active" : "Inactive"}</div>
+                                  </div>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="mt-2 flex gap-2">
+                                  {item.type == "Offer" && (
+                                    <button 
+                                      onClick={ async() => await handleRefund(item.id)}
+                                    >
+                                      Refund
+                                    </button>
+                                  )}
+                                  <button
+                                   onClick={ async() => await handleCancel(item.type, item.id)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        }
+                      </div>
                     ) : (
-                      <>
-                        <Grid2x2X size={60} className="text-teal-500/80 mb-3"/>
-                        <span className="text-lg text-teal-600/80">{activeTab == 'holding' ? "You Own Zero Moments" : "You've Shared Zero Moments"}</span>
-                      </>
+                      <div className="flex flex-col items-center justify-center mt-20">
+                        {
+                          loading ? (
+                            <span className="animate-spin">
+                              <LoaderCircle size={60} className="text-teal-500/80"/>
+                            </span>
+                          ) : (
+                            <>
+                              <Grid2x2X size={60} className="text-teal-500/80 mb-3"/>
+                              <span className="text-lg text-teal-600/80">
+                                {activeTab == 'holding' && "You Own Zero Moments"}
+                                {activeTab == 'moments' && "You've Shared Zero Moments"}
+                                {activeTab == 'activity' && "You've Made No Offers or Listings"}
+                              </span>
+                            </>
+                          )
+                        }
+                      </div>
                     )
                   }
-                </div>
+                  
+                </>
               )
             }
           </div>
