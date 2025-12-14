@@ -514,6 +514,7 @@ export async function getUserOffersListings(username: string) {
             args: [index]
         }).then((nft: any) => ({
             type: 'Listing',
+            id: nft.listingId as number,
             tokenId: Number(nft.tokenId),
             price: formatEther(nft.pricePerToken),
             amount: Number(nft.amount),
@@ -534,6 +535,7 @@ export async function getUserOffersListings(username: string) {
             args: [index]
         }).then((nft: any) => ({
             type: 'Offer',
+            id: nft.offerId as number,
             tokenId: Number(nft.tokenId),
             price: formatEther(nft.offerPerToken),
             amount: Number(nft.amount),
@@ -564,9 +566,12 @@ export async function getUserOffersListings(username: string) {
         })
     );
 
-    return (await Promise.all(nftPromises)).filter(data => 
-        data.status === 0 && currentTimestamp <= Number(data.expiresAt)
-    );
+    return (await Promise.all(nftPromises)).filter(data => {
+        const isExpired = currentTimestamp > Number(data.expiresAt);
+        return data.type === 'Offer' 
+            ? (data.status === 0 || !isExpired)
+            : (data.status === 0 && !isExpired);
+    });
 
 }
 
