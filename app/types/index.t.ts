@@ -77,3 +77,45 @@ export interface ActivityVolumeData {
     }[];
     volume: number;
 }
+
+export interface TokenListings {
+    listingId: number;
+    tokenId: number;
+    seller: string;
+    price: string;
+    amount: string;
+    sold: string;
+    creator: string;
+    imageUrl: string;
+    desc: string;
+}
+
+export interface SharedMoments {
+    tokenId: number;
+    creator: string;
+    price: string;
+    amount: string;
+    sold: string;
+    imageUrl: string;
+    desc: string;
+    expires: string;
+}
+
+export interface UserOfferlistings {
+    image: string;
+    desc: string;
+    type: string;
+    tokenId: number;
+    price: string;
+    amount: number;
+    sold_rec: number;
+    expiresAt: string;
+    status: number;
+}
+
+export interface Notification {
+    tokenId: number;
+    buyer: string;
+    imageUrl: string;
+    price: string;
+}
