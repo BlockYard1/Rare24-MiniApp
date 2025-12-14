@@ -105,6 +105,7 @@ export interface UserOfferlistings {
     image: string;
     desc: string;
     type: string;
+    id: number;
     tokenId: number;
     price: string;
     amount: number;
