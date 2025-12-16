@@ -26,6 +26,31 @@ export async function getFarcasterUser(fid: number) {
   };
 }
 
+// export async function getAllFollowings(fid: number) {
+//   const allFollowing: any[] = [];
+//   let cursor: string | null = null;
+
+//   do {
+//     const url = cursor 
+//       ? `https://api.neynar.com/v2/farcaster/following/?limit=100&fid=${fid}&cursor=${cursor}`
+//       : `https://api.neynar.com/v2/farcaster/following/?limit=100&fid=${fid}`;
+
+//     const response = await fetch(url, {
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'x-api-key': process.env.NEYNAR_API_KEY!
+//       }
+//     });
+
+//     const data: any = await response.json();
+//     allFollowing.push(...data.users);
+//     cursor = data.next?.cursor || null;
+
+//   } while (cursor);
+
+//   return allFollowing.map(account => account.user.username as string)
+// }
+
 export async function getAllFollowings(fid: number) {
   const allFollowing: any[] = [];
   let cursor: string | null = null;
@@ -36,17 +61,29 @@ export async function getAllFollowings(fid: number) {
       : `https://api.neynar.com/v2/farcaster/following/?limit=100&fid=${fid}`;
 
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.NEYNAR_API_KEY!
       }
     });
 
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
     const data: any = await response.json();
-    allFollowing.push(...data.users);
-    cursor = data.next.cursor;
+    
+    // Check if users array exists and is an array
+    if (data.users && Array.isArray(data.users)) {
+      allFollowing.push(...data.users);
+    } else {
+      console.error('Unexpected API response structure:', data);
+      break;
+    }
+    
+    cursor = data.next?.cursor || null;
 
   } while (cursor);
 
-  return allFollowing.map(account => account.user.username as string)
+  return allFollowing.map(account => account.username as string);
 }
