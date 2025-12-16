@@ -20,7 +20,7 @@ export default function TopBar() {
   const connectors = useConnectors()
   const { connect } = useConnect()
 
-  console.log(`address: ${address} ${isConnected}`)
+  console.log(`address>: ${address} ${isConnected}`)
 
   useEffect(() => {
     try {
@@ -40,7 +40,7 @@ export default function TopBar() {
   }, [])
 
   return (
-    <header className="fixed top-0 left-0 right-0 border-b border-border bg-background z-50">
+    <header className="fixed top-0 left-0 right-0 border-b-1 dark:border-gray-600 border-border bg-background z-50">
       <div className="flex items-center justify-between h-16 px-4 max-w-md mx-auto sm:max-w-none sm:px-6">
         {/* Logo/Brand */}
         <h1 className={`text-2xl text-foreground ${raleway.variable}`} style={{ fontWeight: 400 }}>rare24</h1>
@@ -55,7 +55,7 @@ export default function TopBar() {
             <Bell className="text-foreground" size={30} />
             {
               (notify?.length ?? 0) > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 bg-destructive text-destructive-foreground text-xs font-semibold rounded-full">
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-destructive-foreground text-xs font-semibold rounded-full">
                   {(notify?.length ?? 0) > 9 ? '9+' : notify?.length}
                 </span>
               )
