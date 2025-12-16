@@ -41,7 +41,7 @@ export function ImageUploadCard() {
   const [canPost, setCanPost] = useState<CanPost | null>(null)
 
   // Image Size
-  const MIN_WIDTH = 1080
+  const MIN_WIDTH = 500
   const MAX_WIDTH = 5000
   const MIN_HEIGHT = 1080
   const MAX_HEIGHT = 5000
@@ -180,7 +180,7 @@ export function ImageUploadCard() {
         abi: RARE24_CONTRACT_ABI,
         address: RARE24_CONTRACT_ADDRESS,
         functionName: 'uploadNft',
-        args: [response.message, parseEther(price), BigInt(maxsupply), user?.username, creators]
+        args: [response.message, parseEther(price), BigInt(maxsupply), user?.username, user?.pfpUrl, creators]
       })
       const hash = await writeContract(config as Config, request)
       const receipt = await waitForTransactionReceipt(config as Config, { hash });
@@ -208,11 +208,11 @@ export function ImageUploadCard() {
               <img
                 src={selectedImage}
                 alt="Selected"
-                className={`w-full ${(isUploading || isError || isSuccess) ? "h-3/4" : "h-full"} object-contain rounded-lg`}
+                className={`w-full ${(isUploading || isError || isSuccess) ? "h-1/2" : "h-full"} object-contain rounded-lg`}
               />
               {
                 isUploading && (
-                  <div className="flex flex-col w-full items-center text-teal-800 dark:text-teal-300 justify-center p-5 gap-2 border bg-teal-500/20 border-teal-700 rounded-lg">
+                  <div className="flex mt-5 flex-col w-full items-center text-teal-800 dark:text-teal-300 justify-center p-5 gap-2 border bg-teal-500/20 border-teal-700 rounded-lg">
                     <span className="animate-spin">
                       <LoaderPinwheel size={35} />
                     </span>
@@ -222,7 +222,7 @@ export function ImageUploadCard() {
               }
               {
                 isError && (
-                  <div className="flex flex-col w-full items-center text-red-700 dark:text-red-300 justify-center p-5 gap-2 border bg-red-500/20 border-red-700 rounded-lg">
+                  <div className="flex mt-5 flex-col w-full items-center text-red-700 dark:text-red-300 justify-center p-5 gap-2 border bg-red-500/20 border-red-700 rounded-lg">
                     <span className="animate-pulse">
                       <CircleX size={35} />
                     </span>
@@ -235,13 +235,13 @@ export function ImageUploadCard() {
               }
               {
                 isSuccess && (
-                  <div className="flex flex-col w-full items-center text-green-800 dark:text-green-300 justify-center p-5 gap-2 border bg-green-500/20 border-green-700 rounded-lg">
+                  <div className="flex mt-5 flex-col w-full items-center text-green-800 dark:text-green-300 justify-center p-5 gap-2 border bg-green-500/20 border-green-700 rounded-lg">
                     <span className="animate-pulse">
                       <CircleCheck size={35} />
                     </span>
                     <span className="text-lg font-semibold">Successfully Shared Moment As NFT</span>
                     <button onClick={() => route.push("/")} className="px-3 py-2 bg-green-600 rounded-lg text-white">
-                      Okay
+                      Done
                     </button>
                   </div>
                 )
