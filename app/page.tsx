@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { getFarcasterUser } from "./backend/farcasterUser";
-import sdk from "@farcaster/frame-sdk"
+import sdk from "@farcaster/miniapp-sdk"
 import { useFarcasterStore } from "./store/useFarcasterStore";
 import { config } from "@/utils/wagmi";
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
 import { Config } from "wagmi";
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "./blockchain/core";
 import { parseEther } from "viem";
-import { LoaderCircle, Heart, CircleCheck, Grid2x2X } from "lucide-react";
+import { LoaderCircle, Heart, CircleCheck, Grid2x2X, CircleX } from "lucide-react";
 import { getSharedMoments } from "./blockchain/getterHooks";
 import { SharedMoments } from "./types/index.t";
-
+import { getEthPrice } from "./backend/price";
 
 export default function Home() {
   const { setUser, setLoading } = useFarcasterStore()
@@ -25,6 +25,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [sharedMoments, setSharedMoments] = useState<SharedMoments[] | null>(null)
   const [id, setId] = useState<number | null>(null)
+  const [inUsd, setInUsd] = useState("0")
 
   // fetch farcaster data
   useEffect(() => {
@@ -69,16 +70,27 @@ export default function Home() {
     const fetchData = async() => {
       setIsDataLoading(true)
 
-      if(id) {
-        const data = await getSharedMoments(id)
-        if(data)
-          setSharedMoments(data)
-      }
+      const data = await getSharedMoments()
+      if(data)
+        setSharedMoments(data)
 
       setIsDataLoading(false)
     }
     fetchData()
-  }, [id])
+  }, [])
+
+  // ETH to USD
+  useEffect(() => {
+    const ethInUsd = async () => {
+      const usdPrice = await getEthPrice()
+      if(usdPrice) {
+        setInUsd(usdPrice.toFixed(2))
+      } 
+      // console.log(`moment: ${JSON.stringify(sharedMoments)}`)
+    }
+
+    ethInUsd()
+  }, [sharedMoments]);
 
   const handleBuyNow = async (tokenId:number, price: string) => {    
     try{
@@ -100,7 +112,7 @@ export default function Home() {
       setIsLoading(false)
       setSuccess(true)
     } catch(error) {
-      console.error("handleAcceptOffer: ", error)
+      console.error("handleBuyNFT: ", error)
       setIsLoading(false)
       setError("Couldn't Buy NFT!")
     } finally {
@@ -113,11 +125,13 @@ export default function Home() {
   }
   
   if(isDataLoading) return (
-    <div className="my-16 flex flex-col items-center justify-center gap-5 p-10 max-h-[25%]">
-      <span className="animate-spin">
-        <LoaderCircle size={50} className="text-teal-500/80"/>
-      </span>
-      <span className="text-teal-500/80 text-lg">Fetching Moments ...</span>
+    <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+      <div className="flex flex-col items-center justify-center">
+        <span className="animate-spin">
+         <LoaderCircle size={50} className="text-teal-500/80"/>
+       </span>
+       <span className="text-lg text-teal-600/80">Finding Moments</span>
+      </div>
     </div>
   )
 
@@ -131,20 +145,39 @@ export default function Home() {
               sharedMoments?.map((moment) => {
                 return(
                   <div className="border-b border-gray-500/30" key={moment.tokenId}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={moment?.pfpUrl} 
+                          alt={moment?.creator}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300 font-semibold text-lg">{moment?.creator}</span>
+                      </div>
+                      
+                      <span className="text-gray-700 dark:text-gray-300 text-md">{moment?.expires}</span>
+                    </div>
                     {/* Image */}
                     <div 
-                      className="border-b max-h-[50%]"
+                      className="flex items-center justify-center relative overflow-hidden"
+                      style={{ maxHeight: '65vh' }}
                     >
+                      {/* Blurred background */}
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center blur-2xl scale-110"
+                        style={{ backgroundImage: `url(${moment?.imageUrl})` }}
+                      />
+                      
+                      {/* Actual image */}
                       <img 
                         src={moment?.imageUrl} 
                         alt={moment?.creator}
+                        className="max-h-[65vh] w-auto h-auto object-contain relative z-10"
                       />
                     </div>
                     {/* Moment Details */}
                     <div className="flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300">
-                        <div className="font-semibold">
-                            <span className="text-lg">@{moment?.creator}</span>
-                        </div>
                         <div 
                           className="flex items-center justify-even gap-2"
                           onClick={async() => {
@@ -155,30 +188,53 @@ export default function Home() {
                             <Heart size={25} className="text-red-500"/>
                             <span className="text-lg font-semibold">{moment?.sold}/{moment?.amount}</span>
                         </div>
+                        <div className="flex items-center gap-1">
+                          <img 
+                            src="/eth_light.png" 
+                            alt={moment?.creator}
+                            className="w-3 object-cover hidden dark:block"
+                          />
+                          <img 
+                            src="/eth_dark.png" 
+                            alt={moment?.creator}
+                            className="w-5 object-cover dark:hidden"
+                          />
+                          <p className="text-lg font-semibold">
+                            <span className="font-semibold">
+                              {moment?.price}, ${(Number(moment?.price) * Number(inUsd)).toFixed(2)}
+                            </span>
+                          </p>
+                        </div>
                     </div>
                     {
                       selectedId === moment.tokenId && (
                         <div className="p-5">
                           {
                             isLoading && (
-                              <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col py-2 font-semibold text-lg">
+                              <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                <span className="text-lg text-white">Buying NFT ...</span>
                                 <span className="flex items-center justify-center">
-                                  <LoaderCircle size={30} className="animate-spin text-white" />
+                                  <LoaderCircle size={35} className="animate-spin text-white" />
                                 </span>
                               </div>
                             )
                           }
                           {
                             error && (
-                              <div className="text-center text-red-200 rounded-lg bg-red-500 flex flex-col py-2 font-semibold text-lg">
-                                <span className="">{`${error} Try Again!`}</span>
+                              <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                <span className="flex items-center justify-center">
+                                  <CircleX size={35} className="text-white" />
+                                </span>
+                                <span className="">Failed to Buy NFT! Try Again!</span>
                               </div>
                             )
                           }
                           {
                             success && (
-                              <div className="text-center text-green-200 rounded-lg bg-green-600 flex items-center justify-center space-x-2 py-2 text-lg font-semibold ">
-                                <CircleCheck size={30} className="font-semibold" />
+                              <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
+                                <span className="flex items-center justify-center">
+                                  <CircleCheck size={35} className="text-white" />
+                                </span>
                                 <span className="">NFT Bought</span>
                               </div>
                             )
@@ -186,9 +242,8 @@ export default function Home() {
                         </div>
                       )
                     }
-                    <div className="px-4 pb-5 space-y-2 text-gray-700 dark:text-gray-300">
+                    <div className="px-4 pb-8 space-y-2 text-gray-700 dark:text-gray-300">
                         <p className="text-lg">{moment?.desc}</p>
-                        <p className="text-md font-semibold">Price: <span className="font-semibold">{moment?.price} ETH ($213)</span></p>
                     </div>
                   </div>
                 )
@@ -197,9 +252,11 @@ export default function Home() {
           </>
         ) 
         : (
-          <div>
-            <Grid2x2X size={60} className="text-teal-500/80 mb-3"/>
-            <span className="text-lg text-teal-600/80">No Moments Shared Yet!</span>
+          <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+            <div className="flex flex-col items-center justify-center">
+              <Grid2x2X size={60} className="text-teal-500/80 mb-3"/>
+              <span className="text-lg text-teal-600/80">No Moments Shared Yet!</span>
+            </div>
           </div>
         ) 
       }
