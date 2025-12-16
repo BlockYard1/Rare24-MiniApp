@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { LoaderCircle, Grid2x2X } from "lucide-react";
+import { LoaderCircle, Grid2x2X, CircleX, CircleCheck } from "lucide-react";
 import { useFarcasterStore } from "@/app/store/useFarcasterStore";
 import { CreatorNftData, NFTDetails, UserOfferlistings } from "@/app/types/index.t";
 import { getCreatorMoments, getUserOffersListings } from "@/app/blockchain/getterHooks";
@@ -24,9 +24,10 @@ export default function Profile() {
   const [displayItems, setDisplayItems] = useState<NFTDetails[]>([])
   const [activity, setActivity] = useState<UserOfferlistings[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(false)
   const [success, setSuccess] = useState(false)
   const [process, setProcess] = useState(false)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
 
   // Fetch user's NFT moments
   useEffect(() => {
@@ -47,11 +48,13 @@ export default function Profile() {
 
   // Update displayItems
   useEffect(() => {
-    if(activeTab === "moments")
+    if(activeTab === "moments"){
+      setActivity([])
       setDisplayItems(moments?.Nfts ?? [])
-    else if(activeTab === "holding")
+    } else if(activeTab === "holding") {
+      setActivity([])
       setDisplayItems(userNfts)
-    else {
+    } else {
       setDisplayItems([])
     }
 
@@ -77,11 +80,12 @@ export default function Profile() {
     } catch(error) {
       console.error("Error: ", error)
       setProcess(false)
-      setError("Couldn't Cancel!")
+      setError(true)
     } finally {
       setTimeout(() => {
-        setError("")
+        setError(false)
         setSuccess(false)
+        setSelectedId(null)
       }, 5000)
     }
   }
@@ -106,11 +110,12 @@ export default function Profile() {
     } catch(error) {
       console.error("Error: ", error)
       setProcess(false)
-      setError("Couldn't Refund!")
+      setError(true)
     } finally {
       setTimeout(() => {
-        setError("")
+        setError(false)
         setSuccess(false)
+        setSelectedId(null)
       }, 5000)
     }
   }
@@ -180,7 +185,7 @@ export default function Profile() {
               Holding
             </button>
             <button
-              onClick={() => setActiveTab("holding")}
+              onClick={() => setActiveTab("activity")}
               className={`pb-3 text-lg font-medium transition-colors ${
                 activeTab === "activity"
                   ? "text-teal-700 border-b-2 border-teal-600 border-foreground"
@@ -226,17 +231,16 @@ export default function Profile() {
                     activity.length > 0 ? (
                       <div className="">
                         {
-                          activity.map((item) => (
+                          activity.map((item, index) => (
                             <div 
-                              className="flex gap-4"
-                              key={item.tokenId}
+                              className="flex gap-4 border-b border-gray-500/30 py-5"
+                              key={`${item.type}_${item.id}`}
                             >
                               {/* Image on the left - perfect square */}
-                              <div className="relative aspect-square w-32 shrink-0 overflow-hidden rounded-md">
-                                <Image 
+                              <div className="relative aspect-square w-32 grid place-items-center shrink-0 overflow-hidden rounded-md">
+                                <img 
                                   src={item.image || "/placeholder.svg"} 
                                   alt={item.id.toString()} 
-                                  fill 
                                   className="object-cover" 
                                   onClick={() => route.push(`/nft/${item.tokenId}`)}
                                 />
@@ -245,39 +249,95 @@ export default function Profile() {
                               {/* Data on the right */}
                               <div className="flex flex-1 flex-col justify-between">
                                 <div className="space-y-2">
-                                  <p className="font-medium text-foreground">{item.desc}</p>
-                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                                    <div className="text-muted-foreground">Token ID:</div>
-                                    <div className="font-medium">#{item.tokenId}</div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <img 
+                                        src={item?.pfpUrl} 
+                                        alt={item?.creator}
+                                        className="w-6 h-6 object-cover rounded-full"
+                                      />
+                                      <span className="text-lg font-semibold">{item?.creator}</span>
+                                    </div>
+                                    <span>
+                                      {item.expiresAt}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
 
-                                    <div className="text-muted-foreground">Price:</div>
-                                    <div className="font-medium">{item.price}</div>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-lg">Price</span>
+                                      <span className="text-lg font-semibold">{item.price} ETH</span>
+                                    </div>
 
-                                    <div className="text-muted-foreground">Amount:</div>
-                                    <div className="font-medium">{item.amount}</div>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-lg">Amount</span>
+                                      <span className="text-lg font-semibold">{item.amount}</span>
+                                    </div>
 
-                                    <div className="text-muted-foreground">Sold/Rec:</div>
-                                    <div className="font-medium">{item.sold_rec}</div>
-
-                                    <div className="text-muted-foreground">Expires:</div>
-                                    <div className="font-medium">{item.expiresAt}</div>
-
-                                    <div className="text-muted-foreground">Status:</div>
-                                    <div className="font-medium">{item.status === 1 ? "Active" : "Inactive"}</div>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-lg">{item.type === 'Offer' ? "Received" : "Sold"}</span>
+                                      <span className="text-lg font-semibold">{item.sold_rec}</span>
+                                    </div>
                                   </div>
                                 </div>
 
+                                {
+                                  selectedId === index && (
+                                    <div className="p-5">
+                                      {
+                                        process && (
+                                          <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                            <span className="flex items-center justify-center">
+                                              <LoaderCircle size={35} className="animate-spin text-white" />
+                                            </span>
+                                          </div>
+                                        )
+                                      }
+                                      {
+                                        error && (
+                                          <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                            <span className="flex items-center justify-center">
+                                              <CircleX size={35} className="text-white" />
+                                            </span>
+                                            <span className="">Failed</span>
+                                          </div>
+                                        )
+                                      }
+                                      {
+                                        success && (
+                                          <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
+                                            <span className="flex items-center justify-center">
+                                              <CircleCheck size={35} className="text-white" />
+                                            </span>
+                                            <span className="">Succeded</span>
+                                          </div>
+                                        )
+                                      }
+                                    </div>
+                                  )
+                                }
+
                                 {/* Action buttons */}
-                                <div className="mt-2 flex gap-2">
-                                  {item.type == "Offer" && (
+                                <div className={`mt-2 p-2 flex items-center gap-2 ${((selectedId === index) && (success || error || process)) && 'hidden'}`}>
+                                  {item.type === "Offer" && item.status === 0 && item.expiresAt === "0m" && (
                                     <button 
-                                      onClick={ async() => await handleRefund(item.id)}
+                                      onClick={ async() => {
+                                        setSelectedId(index)
+                                        await handleRefund(item.id)
+                                      }}
+                                      disabled={success || error || process}
+                                      className={`w-full text-lg bg-orange-500 text-white text-center px-3 py-2 rounded-full`}
                                     >
                                       Refund
                                     </button>
                                   )}
                                   <button
-                                   onClick={ async() => await handleCancel(item.type, item.id)}
+                                    onClick={ async() => {
+                                      setSelectedId(index)
+                                      await handleCancel(item.type, item.id)
+                                    }}
+                                    disabled={success || error || process}
+                                    className={`w-full text-lg bg-blue-500 text-white text-center px-3 py-2 rounded-full ${item.expiresAt === "0m" && "hidden"}`}
                                   >
                                     Cancel
                                   </button>
