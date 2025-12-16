@@ -133,7 +133,7 @@ function formatDate(timestamp: number) {
   const date = new Date(timestamp * 1000); // multiply by 1000 if timestamp is in seconds
   
   const day = date.getDate();
-  const month = date.toLocaleString('en-US', { month: 'long' });
+  const month = date.toLocaleString('en-US', { month: 'long' }).slice(0,3);
   const year = date.getFullYear();
   
   return `${day} ${month}, ${year}`;
@@ -185,6 +185,7 @@ export async function getMomentById(tokenId: number) {
 
     return {
         creator: moment.creator as string,
+        pfpUrl: moment.pfpUrl as string,
         imageUrl: data.image,
         desc: data.desc,
         created: formatDate(Number(moment.createdAt as string)),
@@ -418,18 +419,38 @@ export async function getTokensListed() {
         amount: listing.amount as string,
         sold: listing.sold  as string,
         creator: detailsResults[i].creator as string,
+        pfpUrl: detailsResults[i].pfpUrl as string,
         imageUrl: metadataResults[i].image as string,
         desc: metadataResults[i].desc as string
     }));
 }
 
-export async function getSharedMoments(fid: number) {
+// Timestamp to "10h" or "34m"
+function formatTime(deadlineTimestamp: number): string {
+  const now = Math.floor(Date.now() / 1000); // Current time in seconds
+  const secondsRemaining = deadlineTimestamp - now;
+
+  if (secondsRemaining <= 0) {
+    return "0m";
+  }
+
+  const hoursRemaining = Math.floor(secondsRemaining / 3600);
+  const minutesRemaining = Math.floor(secondsRemaining / 60);
+
+  if (hoursRemaining > 0) {
+    return `${hoursRemaining}h`;
+  } else {
+    return `${minutesRemaining}m`;
+  }
+}
+
+export async function getSharedMoments() {
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const MAX_MOMENTS = 20;
 
     // fetch accounts following
-    const following = await getAllFollowings(fid)
-    const followingSet = new Set(following) 
+    // const following = await getAllFollowings(fid)
+    // const followingSet = new Set(following) 
 
     // Fetch listing counter
     const momentCount = await readContract(config as Config, {
@@ -459,8 +480,9 @@ export async function getSharedMoments(fid: number) {
     const activeMoments: any[] = allMoments
         .filter(({ moment }: any) => {
             const isActive = currentTimestamp <= Number(moment.expiresAt)
-            const isFromFollowing = followingSet.has(moment.creator.toLowerCase());
-            return isActive && isFromFollowing
+            // const isFromFollowing = followingSet.has(moment.creator.toLowerCase());
+            // return isActive && isFromFollowing
+            return isActive
         })
         .slice(0, MAX_MOMENTS)
         .map(({ moment }) => moment);
@@ -475,13 +497,14 @@ export async function getSharedMoments(fid: number) {
     // Combine all data (FIX: your original had [0] instead of [i])
     return activeMoments.map((moment: any, i: number) => ({
         tokenId: moment.tokenId as number,
-        creator: moment.sellerName as string,
+        creator: moment.creator as string,
+        pfpUrl: moment.pfpUrl as string,
         price: formatEther(BigInt(moment.price)),
         amount: moment.maxSupply as string,
         sold: moment.totalMinted  as string,
         imageUrl: metadataResults[i].image as string,
         desc: metadataResults[i].desc as string,
-        expires: moment.expiresAt as string
+        expires: formatTime(Number(moment.expiresAt))
     }));
 }
 
@@ -519,7 +542,7 @@ export async function getUserOffersListings(username: string) {
             price: formatEther(nft.pricePerToken),
             amount: Number(nft.amount),
             sold_rec: Number(nft.sold),
-            expiresAt: formatDate(Number(nft.expiresAt)),
+            expiresAt: formatTime(Number(nft.expiresAt)),
             status: nft.status as number
         }))
     );
@@ -540,7 +563,7 @@ export async function getUserOffersListings(username: string) {
             price: formatEther(nft.offerPerToken),
             amount: Number(nft.amount),
             sold_rec: Number(nft.received),
-            expiresAt: formatDate(Number(nft.expiresAt)),
+            expiresAt: formatTime(Number(nft.expiresAt)),
             status: nft.status as number
         }))
     );
@@ -561,6 +584,8 @@ export async function getUserOffersListings(username: string) {
             
             return {
                 ...obj,
+                creator: nft.creator as string,
+                pfpUrl: nft.pfpUrl as string,
                 ...metadata
             };
         })
@@ -569,10 +594,9 @@ export async function getUserOffersListings(username: string) {
     return (await Promise.all(nftPromises)).filter(data => {
         const isExpired = currentTimestamp > Number(data.expiresAt);
         return data.type === 'Offer' 
-            ? (data.status === 0 || !isExpired)
+            ? ((data.status === 0 && !isExpired) || (data.status === 0 && isExpired))
             : (data.status === 0 && !isExpired);
     });
-
 }
 
 export async function checkNotification(userAddress: `0x${string}`) {
@@ -604,13 +628,14 @@ export async function checkNotification(userAddress: `0x${string}`) {
                 address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
                 functionName: 'getBuyOffer',
                 args: [i]
-            }).then(offer => ({ offer }))
+            })
         );
     }
 
     // Fetch all listings in parallel and filter
     return (await Promise.all(offerPromises))
-        .filter(({ offer }: any) => 
+        .filter((offer: any) => 
+            offer &&
             Number(offer.status) === 0 && 
             currentTimestamp < Number(offer.expiresAt) &&
             userTokenIds.has(Number(offer.tokenId))
