@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react";
-import { Heart, LoaderCircle, CircleCheck } from 'lucide-react';
+import { Heart, LoaderCircle, CircleCheck, CircleX } from 'lucide-react';
 import OrdersListingTable from "@/app/components/orders-listing-table";
 import { getCombined, getUserBalance } from "@/app/blockchain/getterHooks";
 import { MomentDetails, MomentsSaleData, ActivityVolumeData } from "@/app/types/index.t";
@@ -13,6 +13,7 @@ import { simulateContract, writeContract, waitForTransactionReceipt } from '@wag
 import { config } from "@/utils/wagmi"
 import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "@/app/blockchain/core";
 import { parseEther, formatEther } from "viem";
+import { getEthPrice } from "@/app/backend/price";
 
 export default function NFTDetails() {
     const user = useFarcasterStore((state) => state.user)
@@ -40,7 +41,7 @@ export default function NFTDetails() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false)
     const [ethBalance, setEthBalance] = useState(0)
-    const [loadingOfferId, setLoadingOfferId] = useState<string | null>(null)
+    const [selectedId, setSelectedId] = useState<number | null>(null)
 
     const tabs = [
         { id: "orders", label: "Orders" },
@@ -161,8 +162,8 @@ export default function NFTDetails() {
     }
 
     const handleAcceptOffer = async(offerId: number) => {
-        setLoadingOfferId(String(offerId))
-        
+        setIsHandLoading(true)
+
         try{
             // call contract function
             const { request } = await simulateContract(config as Config, {
@@ -175,24 +176,44 @@ export default function NFTDetails() {
             const receipt = await waitForTransactionReceipt(config as Config, { hash });
 
             if (!receipt) throw new Error("Couldn't Accept Offer!")
+
+            setIsHandLoading(false)
+            setSuccess(true)
         } catch(error) {
             console.error("handleAcceptOffer: ", error)
+            setIsHandLoading(false)
             setError("Couldn't Accept Offer!")
-            setTimeout(() => setError(""), 5000)
+        } finally {
+            setTimeout(() => {
+                setError("")
+            }, 5000)
         }
-
-        setLoadingOfferId(null)
     }
+
+    // ETH to USD
+    useEffect(() => {
+    const ethInUsd = async () => {
+        const usdPrice = await getEthPrice()
+        if(usdPrice) {
+        setInUsd(usdPrice.toFixed(2))
+        } 
+        // console.log(`moment: ${JSON.stringify(sharedMoments)}`)
+    }
+
+    ethInUsd()
+    }, [price]);
 
     // Toggle button styles
     const toggleTheme = 'dark:bg-teal-800 bg-teal-600 text-white rounded-full'
 
     if(isDataLoading) return (
-        <div className="my-16 flex flex-col items-center justify-center gap-5 p-10 max-h-[25%]">
-            <span className="animate-spin">
-                <LoaderCircle size={50} className="text-teal-500/80"/>
-            </span>
-            <span className="text-teal-500/80 text-lg">Fetching NFT ...</span>
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+            <div className="flex flex-col items-center justify-center">
+                <span className="animate-spin">
+                    <LoaderCircle size={50} className="text-teal-500/80"/>
+                </span>
+                <span className="text-lg text-teal-600/80">Fetching NFT</span>
+            </div>
         </div>
     )
 
@@ -201,16 +222,32 @@ export default function NFTDetails() {
         {/* NFT */}
         <div className="border-b border-gray-500/30 mb-4">
             {/* Image */}
-            <div className="border-b max-h-[50%]">
+            <div 
+                className="flex items-center justify-center relative overflow-hidden"
+                style={{ maxHeight: '65vh' }}
+            >
+                {/* Blurred background */}
+                <div 
+                className="absolute inset-0 bg-cover bg-center blur-2xl scale-110"
+                style={{ backgroundImage: `url(${moment?.imageUrl})` }}
+                />
+                
+                {/* Actual image */}
                 <img 
-                    src={moment?.imageUrl} 
-                    alt={moment?.creator}
+                src={moment?.imageUrl} 
+                alt={moment?.creator}
+                className="max-h-[65vh] w-auto h-auto object-contain relative z-10"
                 />
             </div>
             {/* Moment Details */}
             <div className="flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300">
-                <div className="font-semibold">
-                    <span className="text-lg">{moment?.creator}</span>
+                <div className="flex items-center gap-2">
+                    <img 
+                        src={moment?.pfpUrl} 
+                        alt={moment?.creator}
+                        className="w-6 h-6 object-cover rounded-full"
+                    />
+                    <span className="text-lg font-semibold">{moment?.creator}</span>
                 </div>
                 <div className="flex items-center justify-even gap-2">
                     <Heart size={25} className="text-red-500"/>
@@ -261,7 +298,7 @@ export default function NFTDetails() {
                                 await handleBuyNow()
                             }} 
                             disabled={isHandLoading || (ethBalance < Number(momentSale?.buyNow.price))} 
-                            className={`w-full text-lg ${(error) ? 'bg-red-500' : 'bg-blue-500'} ${(success) && 'bg-green-500'} text-white text-center px-3 py-2 rounded-full`}
+                            className={`w-full text-lg ${(error) ? 'bg-red-500' : 'bg-blue-500'} ${(success) && 'bg-green-700'} text-white text-center px-3 py-2 rounded-full`}
                         >
                             {
                                 (ethBalance < Number(momentSale?.buyNow.price)) ? `Insufficient Balance (${ethBalance.toFixed(2)} ETH)` : <>
@@ -343,6 +380,7 @@ export default function NFTDetails() {
                     setSuccess(false)
                     setPrice("")
                     setAmount("")
+                    setSelectedId(null)
                 }}
             >
                 <h2 className="text-3xl font-semibold dark:text-gray-400 text-gray-800 mb-4">
@@ -400,7 +438,7 @@ export default function NFTDetails() {
                                         }}
                                         className="px-4 py-3 w-full outline-none font-semibold text-gray-700 dark:text-gray-300"
                                     />
-                                    <p className={`text-lg pr-2 dark:text-gray-400 text-gray-700 font-semibold`}>${inUsd}</p>
+                                    <p className={`text-lg pr-2 dark:text-gray-400 text-gray-700 font-semibold`}>${(Number(inUsd) * Number(price)).toFixed(2)}</p>
                                 </label>
                                 {
                                     (price && amount) && (Number(price) >= 0.001) && (
@@ -428,9 +466,13 @@ export default function NFTDetails() {
                                 }
                                 {
                                     success && (
-                                        <div className="text-center text-green-200 rounded-lg bg-green-600 flex items-center justify-center space-x-2 py-2 text-lg font-semibold ">
-                                            <CircleCheck size={30} className="font-semibold" />
-                                            <span className="">Offer Made</span>
+                                        <div className="text-center text-green-100 rounded-lg bg-green-600 flex items-center justify-center space-x-2 py-2 text-lg font-semibold ">
+                                            <CircleCheck size={30} className="" />
+                                            <span className="">
+                                                {
+                                                    listing ? "Listing Created" : "Offer Made"
+                                                }
+                                            </span>
                                         </div>
                                     )
                                 }
@@ -445,8 +487,8 @@ export default function NFTDetails() {
                                                 await handleMakeOffer()
                                         }
                                     }}
-                                    disabled={isHandLoading || (ethBalance < Number(momentSale?.buyNow.price)) || success}
-                                    className="w-full text-blue-500 dark:text-blue-200 text-xl my-5 px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
+                                    disabled={isHandLoading || (ethBalance < (Number(price) * Number(amount))) || success}
+                                    className={`w-full text-blue-500 dark:text-blue-200 text-xl my-5 px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800 ${(success || error) && "hidden"}`}
                                 >
                                     {
                                         isHandLoading 
@@ -462,16 +504,18 @@ export default function NFTDetails() {
                                         : (
                                             <>
                                                 {
-                                                    ((ethBalance < (Number(price) * Number(amount))) && offering) ? `Insufficient Balance (${ethBalance.toFixed(2)} ETH)` : "Make Offer"
+                                                    offering && (
+                                                        <>
+                                                            {
+                                                                (ethBalance < (Number(price) * Number(amount)))  ? `Insufficient Balance (${ethBalance.toFixed(2)} ETH)` : "Make Offer"
+                                                            }
+                                                        </>
+                                                    )
                                                 }
                                                 {listing && "List"}
                                             </>
                                         ) 
                                     }
-                                    {
-                                        
-                                    }
-
                                 </button>
                             </div>
                         </div>
@@ -485,41 +529,58 @@ export default function NFTDetails() {
                                 <p>Only 1 NFT will be transferred when an offer is accepted</p>
                             </div>
                             {
-                                error && (
-                                    <div className="text-center text-red-200 rounded-lg bg-red-500 flex flex-col py-2 font-semibold text-lg">
-                                        <span className="">{`${error} Try Again!`}</span>
-                                    </div>
-                                )
-                            }
-                            {
-                                success && (
-                                    <div className="text-center text-green-200 rounded-lg bg-green-500 flex flex-col py-2 text-lg">
-                                        <span className="">Offer Accepted</span>
-                                    </div>
-                                )
-                            }
-                            {
                                 momentSale?.orders.map((offer) => {
                                     return (
-                                        <button
+                                        <div
                                             key={offer.id}
-                                            onClick={async() => {
-                                                await handleAcceptOffer(offer.id) 
-                                            }}
-                                            disabled={success || loadingOfferId !== null}
-                                            className="w-full text-blue-500 dark:text-blue-200 text-xl my-3 px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
                                         >
-                                            
                                             {
-                                                loadingOfferId === String(offer.id)
-                                                ? <span className="flex items-center justify-center">
-                                                        <LoaderCircle size={30} className="animate-spin text-white" />
-                                                    </span>
-                                                : <span>
-                                                    Accept for {offer.price} ETH
-                                                </span>
+                                                selectedId === offer.id && (
+                                                    <div className="p-5">
+                                                    {
+                                                        isHandLoading && (
+                                                        <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                                            <span className="text-lg text-white">Accepting Offer ...</span>
+                                                            <span className="flex items-center justify-center">
+                                                            <LoaderCircle size={35} className="animate-spin text-white" />
+                                                            </span>
+                                                        </div>
+                                                        )
+                                                    }
+                                                    {
+                                                        error && (
+                                                        <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                                            <span className="flex items-center justify-center">
+                                                            <CircleX size={35} className="text-white" />
+                                                            </span>
+                                                            <span className="">Failed! Try Again!</span>
+                                                        </div>
+                                                        )
+                                                    }
+                                                    {
+                                                        success && (
+                                                        <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
+                                                            <span className="flex items-center justify-center">
+                                                            <CircleCheck size={35} className="text-white" />
+                                                            </span>
+                                                            <span className="">Offer Accepted</span>
+                                                        </div>
+                                                        )
+                                                    }
+                                                    </div>
+                                                )
                                             }
-                                        </button>
+                                            <button
+                                                onClick={async() => {
+                                                    setSelectedId(offer.id)
+                                                    await handleAcceptOffer(offer.id) 
+                                                }}
+                                                disabled={success || selectedId !== null}
+                                                className={`${selectedId === offer.id ? "hidden" : "w-full text-blue-500 dark:text-blue-200 text-xl my-3 px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"}`}
+                                            >
+                                                Accept for {offer.price} ETH
+                                            </button>
+                                        </div>
                                     )
                                 })
                             }
