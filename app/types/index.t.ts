@@ -41,6 +41,7 @@ export interface AlchemyNFTResponse {
 
 export interface MomentDetails {
     creator: string;
+    pfpUrl: string;
     imageUrl: string;
     desc: string;
     created: string;
@@ -86,6 +87,7 @@ export interface TokenListings {
     amount: string;
     sold: string;
     creator: string;
+    pfpUrl: string;
     imageUrl: string;
     desc: string;
 }
@@ -93,6 +95,7 @@ export interface TokenListings {
 export interface SharedMoments {
     tokenId: number;
     creator: string;
+    pfpUrl: string;
     price: string;
     amount: string;
     sold: string;
@@ -104,6 +107,8 @@ export interface SharedMoments {
 export interface UserOfferlistings {
     image: string;
     desc: string;
+    creator: string;
+    pfpUrl: string;
     type: string;
     id: number;
     tokenId: number;
