@@ -1,6 +1,6 @@
 "use client"
 
-import { Heart, CircleCheck, LoaderCircle, Grid2x2X } from "lucide-react"
+import { Heart, CircleCheck, LoaderCircle, Grid2x2X, CircleX } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { config } from "@/utils/wagmi"
@@ -11,6 +11,7 @@ import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "../block
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { TokenListings } from "../types/index.t"
 import { getTokensListed } from "../blockchain/getterHooks"
+import { getEthPrice } from "../backend/price"
 
 export default function Marketplace() {
   const route = useRouter()
@@ -22,6 +23,7 @@ export default function Marketplace() {
   const [isDataLoading, setIsDataLoading] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [listedTokens, setListedTokens] = useState<TokenListings[] | null>(null)
+  const [inUsd, setInUsd] = useState("0")
 
   useEffect(() => {
     const fetchData = async() => {
@@ -35,6 +37,19 @@ export default function Marketplace() {
     }
     fetchData()
   }, [])
+
+  // ETH to USD
+  useEffect(() => {
+    const ethInUsd = async () => {
+      const usdPrice = await getEthPrice()
+      if(usdPrice) {
+        setInUsd(usdPrice.toFixed(2))
+      } 
+      // console.log(`moment: ${JSON.stringify(sharedMoments)}`)
+    }
+
+    ethInUsd()
+  }, [listedTokens]);
 
   const handleBuyNow = async (listingId:number, price: string) => {    
     try{
@@ -69,12 +84,14 @@ export default function Marketplace() {
   }
 
   if(isDataLoading) return (
-    <div className="my-16 flex flex-col items-center justify-center gap-5 p-10 max-h-[25%]">
-      <span className="animate-spin">
-        <LoaderCircle size={50} className="text-teal-500/80"/>
-      </span>
-      <span className="text-teal-500/80 text-lg">Fetching Listings ...</span>
-    </div>
+      <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+        <div className="flex flex-col items-center justify-center">
+          <span className="animate-spin">
+              <LoaderCircle size={50} className="text-teal-500/80"/>
+          </span>
+          <span className="text-lg text-teal-600/80">Fetching Listings</span>
+        </div>
+      </div>
   )
 
   return (
@@ -89,21 +106,40 @@ export default function Marketplace() {
                   <div className="border-b border-gray-500/30" key={listing.listingId}>
                     {/* Image */}
                     <div 
-                      className="border-b max-h-[50%]"
+                      className="flex items-center justify-center relative overflow-hidden"
+                      style={{ maxHeight: '60vh' }}
                       onClick={() => {
                         route.push(`nft/${listing.tokenId}`)
                       }}
                     >
+                      {/* Blurred background */}
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center blur-2xl scale-110"
+                        style={{ backgroundImage: `url(${listing?.imageUrl})` }}
+                      />
+                      
+                      {/* Actual image */}
                       <img 
                         src={listing?.imageUrl} 
                         alt={listing?.creator}
+                        className="max-h-[60vh] w-auto h-auto object-contain relative z-10"
                       />
                     </div>
                     {/* Moment Details */}
                     <div className="flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300">
                         <div className="font-semibold">
-                            <span className="text-lg">@{listing?.creator}</span> by 
-                            <span className="text-lg"> {listing?.seller}</span>
+                            <div className="flex items-center gap-2">
+                              <img 
+                                  src={listing?.pfpUrl} 
+                                  alt={listing?.creator}
+                                  className="w-6 h-6 object-cover rounded-full"
+                              />
+                              <p>
+                                <span className="text-lg font-semibold">{listing?.creator} </span>
+                                <span className="font-italic">by</span>
+                                <span className="text-lg font-semibold"> {listing?.seller}</span>
+                              </p>
+                            </div>
                         </div>
                         <div 
                           className="flex items-center justify-even gap-2"
@@ -121,24 +157,30 @@ export default function Marketplace() {
                         <div className="p-5">
                           {
                             loading && (
-                              <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col py-2 font-semibold text-lg">
+                              <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                <span className="text-lg text-white">Buying NFT ...</span>
                                 <span className="flex items-center justify-center">
-                                  <LoaderCircle size={30} className="animate-spin text-white" />
+                                  <LoaderCircle size={35} className="animate-spin text-white" />
                                 </span>
                               </div>
                             )
                           }
                           {
                             error && (
-                              <div className="text-center text-red-200 rounded-lg bg-red-500 flex flex-col py-2 font-semibold text-lg">
-                                <span className="">{`${error} Try Again!`}</span>
+                              <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                                <span className="flex items-center justify-center">
+                                  <CircleX size={35} className="text-white" />
+                                </span>
+                                <span className="">Failed to Buy NFT! Try Again!</span>
                               </div>
                             )
                           }
                           {
                             success && (
-                              <div className="text-center text-green-200 rounded-lg bg-green-600 flex items-center justify-center space-x-2 py-2 text-lg font-semibold ">
-                                <CircleCheck size={30} className="font-semibold" />
+                              <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
+                                <span className="flex items-center justify-center">
+                                  <CircleCheck size={35} className="text-white" />
+                                </span>
                                 <span className="">NFT Bought</span>
                               </div>
                             )
@@ -146,9 +188,28 @@ export default function Marketplace() {
                         </div>
                       )
                     }
-                    <div className="px-4 pb-5 space-y-2 text-gray-700 dark:text-gray-300">
+                    <div className="px-4 pb-8 space-y-2 text-gray-700 dark:text-gray-300">
                         <p className="text-lg">{listing?.desc}</p>
-                        <p className="text-md font-semibold">Price: <span className="font-semibold">{listing?.price} ETH ($213)</span></p>
+                        <div className="flex items-center gap-1">
+                          <img 
+                            src="/eth_light.png" 
+                            alt={listing.imageUrl}
+                            className="w-3 object-cover hidden dark:block"
+                          />
+                          <img 
+                            src="/eth_dark.png" 
+                            alt={listing.imageUrl}
+                            className="w-5 object-cover dark:hidden"
+                          />
+                          <p className="text-lg font-semibold">
+                            <span className="font-semibold">
+                              {listing?.price}
+                            </span>
+                            <span>
+                              , ${(Number(listing?.price) * Number(inUsd)).toFixed(2)}
+                            </span>
+                          </p>
+                        </div>
                     </div>
                   </div>
                 )
@@ -157,9 +218,11 @@ export default function Marketplace() {
           </>
         ) 
         : (
-          <div>
-            <Grid2x2X size={60} className="text-teal-500/80 mb-3"/>
-            <span className="text-lg text-teal-600/80">No NFT Listed Yet!</span>
+          <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+            <div className="flex flex-col items-center justify-center">
+              <Grid2x2X size={60} className="text-teal-500/80 mb-3"/>
+              <span className="text-lg text-teal-600/80">No NFT Listed Yet!</span>
+            </div>
           </div>
         ) 
       }
