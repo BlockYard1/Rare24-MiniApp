@@ -4,15 +4,10 @@ import { RARE24_CONTRACT_ADDRESS, RARE24_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDR
 import { readContract } from "@wagmi/core";
 import { config } from "@/utils/wagmi";
 import { Config } from "wagmi";
-import { formatEther, parseEther } from "viem";
-import { getAllFollowings } from "../backend/farcasterUser";
+import { formatEther } from "viem";
+// import { getAllFollowings } from "../backend/farcasterUser";
 import { getUsersTokenIds } from "../backend/alchemy";
 import { NFTDetails } from "../types/index.t";
-
-// const publicClient = createPublicClient({
-//     chain: baseSepolia,
-//     transport: http(process.env.BASE_SEPOLIA_RPC)
-// });
 
 /* RARE24 CONTRACT */
 
@@ -147,8 +142,8 @@ export async function fetchImageFromMetadata(metadataURI: string): Promise<strin
     });
     const metadata = await response.json();
     return metadata.image || '';
-  } catch (error) {
-    console.error('Error fetching metadata:', error);
+  } catch (error: any) {
+    console.error('Error fetching metadata:', error.message);
     return ''; // return empty string or a fallback image URL
   }
 }
@@ -167,8 +162,8 @@ export async function fetchMetadata(metadataURI: string): Promise<{image: string
     }
     
     return data || {image: "", desc: ""};
-  } catch (error) {
-    console.error('Error fetching metadata:', error);
+  } catch (error: any) {
+    console.error('Error fetching metadata:', error.message);
     return {image: "", desc: ""}; // return empty string or a fallback image URL
   }
 }
