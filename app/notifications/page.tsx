@@ -1,7 +1,6 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { BellMinus } from "lucide-react"
 import { useNotificationStore } from "../store/useFarcasterStore"
 
 export default function Notifications() {
@@ -48,14 +47,18 @@ export default function Notifications() {
             }
           </>
         ) : (
-          <>
-            <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
-              <div className="flex flex-col items-center justify-center">
-                <BellMinus size={60} className="text-teal-500/80 mb-3"/>
-                <span className="text-lg text-teal-600/80">No Notifications</span>
+          <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative aspect-square w-30 grid place-items-center shrink-0 overflow-hidden rounded-md">
+                <img 
+                  src={"/empty-box.png"} 
+                  alt={"Empty Box"} 
+                  className="object-cover"
+                />
               </div>
+              <span className="text-lg font-semibold text-teal-600/80">No Notifications!</span>
             </div>
-          </>
+          </div>
         )
       }
     </div>
