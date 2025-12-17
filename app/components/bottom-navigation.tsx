@@ -4,10 +4,12 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus, Tags, Home, Search, User } from "lucide-react"
 import { useFarcasterStore } from "../store/useFarcasterStore"
+import { useConnection } from "wagmi"
 
 export default function BottomNavigation() {
   const pathname = usePathname()
   const user = useFarcasterStore((state) => state.user)
+  const { address } = useConnection()
 
   const navItems = [
     {
@@ -31,7 +33,7 @@ export default function BottomNavigation() {
       label: "Search",
     },
     {
-      href: `/profile/${user ? user.username : 'NaN'}`,
+      href: `/profile/${user ? user.username : 'NaN'}/${address}`,
       icon: User,
       label: "Profile",
     },
@@ -50,7 +52,7 @@ export default function BottomNavigation() {
               href={item.href}
               className={`
                 flex items-center justify-center w-12 h-12 rounded-full transition-colors
-                ${isActive ? "bg-teal-500/50" : "text-muted-foreground hover:text-foreground"}
+                ${isActive ? "bg-[#00B7B5]/50 text-[#005461] dark:text-[#F4F4F4]" : "text-muted-foreground hover:text-foreground"}
               `}
               aria-label={item.label}
             >
