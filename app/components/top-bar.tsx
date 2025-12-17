@@ -55,7 +55,7 @@ export default function TopBar() {
             <Bell className="text-foreground" size={30} />
             {
               (notify?.length ?? 0) > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-destructive-foreground text-xs font-semibold rounded-full">
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-semibold rounded-full">
                   {(notify?.length ?? 0) > 9 ? '9+' : notify?.length}
                 </span>
               )
