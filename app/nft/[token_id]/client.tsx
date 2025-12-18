@@ -74,7 +74,7 @@ export default function NFTDetailsClient(
             setEthBalance(Number(formattedEther))
         }
 
-    }, [balance])
+    }, [])
 
     const handleBuyNow = async () => {
         setIsHandLoading(true)
