@@ -14,13 +14,14 @@ import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core
 import { config } from "@/utils/wagmi"
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { CanPost } from "../types/index.t"
+import { saveUser } from "../backend/neon"
 
 export function ImageUploadCard() {
   const route = useRouter()
   const { isConnected, address } = useConnection()
   const user = useFarcasterStore((state) => state.user)
 
-  console.log(`address: ${address} ${isConnected}`)
+  // console.log(`address: ${address} ${isConnected}`)
 
   const [caption, setCaption] = useState("")
   const [price, setPrice] = useState("");
@@ -156,12 +157,12 @@ export function ImageUploadCard() {
       if(!maxsupply || Number(maxsupply) == 0) setEmptySupply(true);
       return
     }
-    console.log("Uploading:", { caption, price, maxsupply, momentCount })
+    // console.log("Uploading:", { caption, price, maxsupply, momentCount })
 
     setIsUploading(true)
 
     try {
-      // new Promise(resolve => setTimeout(resolve, 5000))
+      // // new Promise(resolve => setTimeout(resolve, 5000))
       // Create FormData
       const formData = new FormData()
       image && formData.append('image', image)
@@ -186,6 +187,15 @@ export function ImageUploadCard() {
       const receipt = await waitForTransactionReceipt(config as Config, { hash });
 
       if (!receipt) throw new Error("uploadNFT Failed!")
+
+      // upload creator to db or update if already existings
+      await saveUser({
+        fid: user?.fid,
+        username: user?.username,
+        display_name: user?.displayName,
+        pfp_url: user?.pfpUrl,
+        bio: user?.bio
+      });
       
       // Update state
       setIsUploading(false)
