@@ -18,7 +18,7 @@ import { saveUser } from "../backend/neon"
 
 export function ImageUploadCard() {
   const route = useRouter()
-  const { isConnected, address } = useConnection()
+  const { isConnected } = useConnection()
   const user = useFarcasterStore((state) => state.user)
 
   // console.log(`address: ${address} ${isConnected}`)
@@ -355,14 +355,22 @@ export function ImageUploadCard() {
           {/* Upload Button */}
           <button
             onClick={async() => await handleUpload()}
-            disabled={!canPost?.canPost}
+            disabled={!canPost?.canPost || !isConnected}
             className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
           >
             {
-              canPost?.canPost ? (
-                <Send className="text-blue-500 dark:text-blue-300" size={25} />
+              !isConnected ? (
+                <span className="text-blue-500 dark:text-blue-300">Connect Wallet</span>
               ) : (
-                <span className="text-blue-500 dark:text-blue-300">Moment Sharable In {canPost?.toNext}</span>
+                <>
+                  {
+                    canPost?.canPost ? (
+                      <Send className="text-blue-500 dark:text-blue-300" size={25} />
+                    ) : (
+                      <span className="text-blue-500 dark:text-blue-300">Moment Sharable In {canPost?.toNext}</span>
+                    )
+                  }
+                </>
               )
             }
           </button>
