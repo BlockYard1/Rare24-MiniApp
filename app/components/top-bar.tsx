@@ -1,27 +1,36 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect } from "react"
-import { Raleway } from "next/font/google"
-import { Bell, Wallet } from "lucide-react"
-import { useConnection, useConnectors, useConnect } from 'wagmi'
+import { useEffect, useState } from "react"
+import { Bell, Wallet, RefreshCcwDot, Info } from "lucide-react"
+import { useConnection, useConnectors, useConnect, useSwitchChain } from 'wagmi'
+import { usePathname } from "next/navigation"
 import { useNotificationStore } from "../store/useFarcasterStore"
 import { checkNotification } from "../blockchain/getterHooks"
-
-const raleway = Raleway({ 
-  weight: ['400'],
-  subsets: ['latin'],
-  variable: '--font-raleway',
-})
+import { baseSepolia } from "viem/chains"
 
 export default function TopBar() {
-  const { isConnected, address } = useConnection()
-  const { setNotify, setLoading, notify, loading } = useNotificationStore()
+  const { switchChain, isError } = useSwitchChain()
+  const { isConnected, address, chain } = useConnection()
   const connectors = useConnectors()
   const { connect } = useConnect()
+  const pathname = usePathname()
 
-  console.log(`address>: ${address} ${isConnected}`)
+  const { setNotify, setLoading, notify, loading } = useNotificationStore()
+  const [hasAttemptedSwitch, setHasAttemptedSwitch] = useState(false)
 
+  console.log(`address>: ${address} ${isConnected} ${chain?.name}`)
+
+  // Switch network if needed
+  useEffect(() => {
+    // Only switch if connected and not on Base
+    if (isConnected && chain?.id !== baseSepolia.id && !hasAttemptedSwitch) {
+      switchChain({ chainId: baseSepolia.id })
+      setHasAttemptedSwitch(true)
+    }
+  }, [isConnected, chain?.id, switchChain, hasAttemptedSwitch])
+
+  // Check Notifications
   useEffect(() => {
     try {
       const fetchData = async() => {
@@ -37,22 +46,39 @@ export default function TopBar() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [chain?.id])
 
   return (
     <header className="fixed top-0 left-0 right-0 border-b-1 dark:border-gray-600 border-border bg-background z-50">
       <div className="flex items-center justify-between h-16 px-4 max-w-md mx-auto sm:max-w-none sm:px-6">
+        {/* Info */}
+        <div>
+          <Link
+            href="/info"
+            className={`relative flex items-center justify-center w-10 h-10 rounded-full ${pathname === "/info" && "bg-[#00B7B5]/50 text-[#005461]"} hover:bg-muted transition-colors`}
+            aria-label="Info"
+          >
+            <Info className={`${pathname === "/info" && "text-[#005461] dark:text-[#F4F4F4]/80"}`} size={30} />
+          </Link>
+        </div>
+        
         {/* Logo/Brand */}
-        <h1 className={`text-2xl text-foreground ${raleway.variable}`} style={{ fontWeight: 400 }}>rare24</h1>
+        <div className="flex items-center">
+          <img 
+              src="/rare24.png" 
+              alt="Rare24 Logo"
+              className="w-18 object-cover"
+          />
+        </div>
 
-        {/* Notification Bell */}
-        <div className={`flex items-center justify-between gap-2`}>
+        {/* Notification Bell & Well*/}
+        <div className={`flex items-center justify-between gap-1`}>
           <Link
             href="/notifications"
-            className="relative flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors"
+            className={`relative flex items-center justify-center w-10 h-10 rounded-full ${pathname === "/notifications" && "bg-[#00B7B5]/50"} hover:bg-muted transition-colors`}
             aria-label="Notifications"
           >
-            <Bell className="text-foreground" size={30} />
+            <Bell className={`${pathname === "/notifications" && "text-[#005461] dark:text-[#F4F4F4]/80"}`} size={30} />
             {
               (notify?.length ?? 0) > 0 && (
                 <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-semibold rounded-full">
@@ -61,17 +87,33 @@ export default function TopBar() {
               )
             }
           </Link>
-          {
-            !address && (
-              <button 
-                onClick={() => connect({ connector: connectors[0] })}
-                disabled={isConnected}
-                className={``}
-              >
-                <Wallet className={``} size={30} />
-              </button>
-            ) 
-          }
+          <div>
+            {
+              !isConnected && (
+                <button 
+                  onClick={() => connect({ connector: connectors[0] })}
+                  disabled={isConnected}
+                  className={``}
+                >
+                  <Wallet className={``} size={30} />
+                </button>
+              ) 
+            }
+            {
+              isError && hasAttemptedSwitch && isConnected && (
+                <button 
+                  onClick={() => {
+                    setHasAttemptedSwitch(false)
+                    switchChain({ chainId: baseSepolia.id })
+                  }}
+                  disabled={isConnected}
+                  className={``}
+                >
+                  <RefreshCcwDot className={``} size={30} />
+                </button>
+              ) 
+            }
+          </div>
         </div>
       </div>
     </header>
