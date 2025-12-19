@@ -58,6 +58,13 @@ function formatDuration(seconds: number) {
 }
 
 export async function getCreatorMoments(creator_username: string, creator_address: `0x${string}`) {
+    if(!creator_address || !creator_username) {
+        return {
+            Nfts: [],
+            mints: 0,
+            earning: '0'
+        }
+    }
     // Fetch earnings and token IDs in parallel
     const [accumEarnings, tokenIdArray] = await Promise.all([
         readContract(config as Config, {
