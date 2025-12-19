@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { config } from "@/utils/wagmi"
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
 import { parseEther } from "viem"
-import { Config } from "wagmi"
+import { Config, useConnection } from "wagmi"
 import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "../blockchain/core"
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { TokenListings } from "../types/index.t"
@@ -14,6 +14,7 @@ import { getEthPrice } from "../backend/price"
 
 export default function MarketplaceClient({ listedTokens } : { listedTokens: TokenListings[] }) {
   const route = useRouter()
+  const { isConnected } = useConnection()
   const user = useFarcasterStore((state) => state.user)
 
   const [error, setError] = useState("")
@@ -137,8 +138,10 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
                             <div 
                                 className="flex items-center justify-even gap-2"
                                 onClick={async() => {
-                                setSelectedId(listing.listingId)
-                                await handleBuyNow(listing.listingId, listing.price)
+                                  if(isConnected) {
+                                    setSelectedId(listing.listingId)
+                                    await handleBuyNow(listing.listingId, listing.price)
+                                  }
                                 }}
                             >
                                 <Heart size={25} className="text-red-500"/>

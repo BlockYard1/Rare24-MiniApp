@@ -6,7 +6,7 @@ import sdk from "@farcaster/miniapp-sdk"
 import { useFarcasterStore } from "./store/useFarcasterStore";
 import { config } from "@/utils/wagmi";
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
-import { Config } from "wagmi";
+import { Config, useConnection } from "wagmi";
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "./blockchain/core";
 import { parseEther } from "viem";
 import { LoaderCircle, Heart, CircleCheck, CircleX } from "lucide-react";
@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMoments[] }) {
   const { setUser, setLoading } = useFarcasterStore()
   const router = useRouter()
+  const { isConnected } = useConnection()
 
   const [userName, setUserName] = useState('')
   const [error, setError] = useState("")
@@ -171,8 +172,10 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
                             <div 
                                 className="flex items-center justify-even gap-2"
                                 onClick={async() => {
+                                  if(isConnected) {
                                     setSelectedId(moment.tokenId)
                                     await handleBuyNow(moment.tokenId, moment.price)
+                                  }
                                 }}
                             >
                                 <Heart size={25} className="text-red-500"/>

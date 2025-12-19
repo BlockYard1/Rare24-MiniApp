@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { LoaderCircle, CircleX, CircleCheck } from "lucide-react";
 import { useFarcasterStore } from "@/app/store/useFarcasterStore";
 import { CreatorNftData, NFTDetails, UserOfferlistings } from "@/app/types/index.t";
-import { Config } from 'wagmi'
+import { Config, useConnection } from 'wagmi'
 import { useRouter } from "next/navigation";
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
 import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "@/app/blockchain/core";
@@ -23,6 +23,7 @@ export default function ProfileClient(
       parsedUserNfts
     } : Props
 ) {
+  const { isConnected } = useConnection()
   const user = useFarcasterStore((state) => state.user)
   const route = useRouter()
 
@@ -151,7 +152,23 @@ export default function ProfileClient(
                 <p className="text-lg text-gray-700 dark:text-gray-400">Mints</p>
               </div>
               <div className="">
-                <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">◊ {moments?.earning ?? 0}</p>
+                <div className="flex items-center gap-1">
+                  <img 
+                    src="/eth_light.png" 
+                    alt="eth-light"
+                    className="w-3 object-cover hidden dark:block"
+                  />
+                  <img 
+                    src="/eth_dark.png" 
+                    alt="eth-dark"
+                    className="w-5 object-cover dark:hidden"
+                  />
+                  <p className="text-lg font-semibold">
+                    <span className="font-semibold">
+                      {moments?.earning ?? 0}
+                    </span>
+                  </p>
+                </div>
                 <p className="text-lg text-gray-700 dark:text-gray-400">Earning</p>
               </div>
             </div>
@@ -329,6 +346,7 @@ export default function ProfileClient(
                                   {item.type === "Offer" && item.status === 0 && item.expiresAt === "0m" && (
                                     <button 
                                       onClick={ async() => {
+                                        if(!isConnected) return
                                         setSelectedId(index)
                                         await handleRefund(item.id)
                                       }}
@@ -340,6 +358,7 @@ export default function ProfileClient(
                                   )}
                                   <button
                                     onClick={ async() => {
+                                      if(!isConnected) return
                                       setSelectedId(index)
                                       await handleCancel(item.type, item.id)
                                     }}

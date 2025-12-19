@@ -29,7 +29,7 @@ export default function NFTDetailsClient(
     } : Props
 ) {
     const user = useFarcasterStore((state) => state.user)
-    const { address } = useConnection()
+    const { address, isConnected } = useConnection()
     const { data } = useBalance({ address })
     const route = useRouter()
 
@@ -324,7 +324,8 @@ export default function NFTDetailsClient(
 
                         <button 
                             onClick={ async() => {
-                                await handleBuyNow()
+                                if(isConnected)
+                                    await handleBuyNow()
                             }} 
                             disabled={isHandLoading || (ethBalance < Number(momentSale?.buyNow.price))} 
                             className={`w-full text-lg ${(error) ? 'bg-red-500' : 'bg-blue-500'} ${(success) && 'bg-green-700'} text-white text-center px-3 py-2 rounded-full`}
@@ -507,6 +508,7 @@ export default function NFTDetailsClient(
                                 }
                                 <button
                                     onClick={async() => {
+                                        if(!isConnected) return
                                         if(!amount) setEmptyAmount(true)
                                         if(!price) setEmptyPrice(true)
                                         if(price && amount) {
@@ -601,6 +603,7 @@ export default function NFTDetailsClient(
                                             }
                                             <button
                                                 onClick={async() => {
+                                                    if(!isConnected) return
                                                     setSelectedId(offer.id)
                                                     await handleAcceptOffer(offer.id) 
                                                 }}
