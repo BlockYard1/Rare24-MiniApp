@@ -6,6 +6,9 @@ import { NFTDetails, AlchemyNFTResponse } from "../types/index.t";
 const network = 'base-sepolia';
 
 export async function getUsersTokenIds(userAddress: `0x${string}`): Promise<NFTDetails[]> {
+    // Return empty if no address
+    if(!userAddress) return [];
+
     // API endpoint
     const url = `https://${network}.g.alchemy.com/nft/v3/${process.env.ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAddress}&contractAddresses[]=${RARE24_CONTRACT_ADDRESS}&withMetadata=true&pageSize=100`
     const options: RequestInit = { method: 'GET' }
