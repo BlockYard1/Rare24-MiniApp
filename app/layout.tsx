@@ -13,6 +13,9 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Rare24",
   description: "Own Your Favourite Creator's Moment",
+  other: {
+    'base:app_id': '69483551d19763ca26ddc88f',
+  },
 };
 
 export default function RootLayout({
