@@ -1,5 +1,6 @@
 import HomeClient from "./client";
 import { getSharedMoments } from "./blockchain/getterHooks";
+import type { Metadata } from "next";
 
 export default async function HomePage() {
   try {
@@ -14,10 +15,22 @@ export default async function HomePage() {
   }
 }
 
-export async function generateMetadata() {
- 
+export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Rare24",
-    description: `View Shared Monents!`
-  }
+    description: "Discover, collect, and own rare moments from your favourite creators each day",
+    other: {
+      "fc:miniapp": JSON.stringify({
+        version: "1",
+        imageUrl: "https://rare24.vercel.app/hero.png",
+        button: {
+          title: "Join Rare24",
+          action: {
+            name: `Launch Rare24`,
+            url: "https://rare24.vercel.app"
+          },
+        },
+      }),
+    },
+  };
 }
