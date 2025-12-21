@@ -14,7 +14,7 @@ import { getEthPrice } from "../backend/price"
 
 export default function MarketplaceClient({ listedTokens } : { listedTokens: TokenListings[] }) {
   const route = useRouter()
-  const { isConnected } = useConnection()
+  const { isConnected, address } = useConnection()
   const user = useFarcasterStore((state) => state.user)
 
   const [error, setError] = useState("")
@@ -22,6 +22,13 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
   const [loading, setLoading] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [inUsd, setInUsd] = useState("0")
+
+  // Refresh on address change
+  useEffect(() => {
+      setTimeout(() => {
+          route.refresh()
+      }, 2000)
+  }, [address])
 
   // ETH to USD
   useEffect(() => {
@@ -103,7 +110,7 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
                             className="flex items-center justify-center relative overflow-hidden"
                             style={{ maxHeight: '60vh' }}
                             onClick={() => {
-                            route.push(`nft/${listing.tokenId}`)
+                            route.push(`nft/${listing.tokenId}/${address}`)
                             }}
                         >
                             {/* Blurred background */}

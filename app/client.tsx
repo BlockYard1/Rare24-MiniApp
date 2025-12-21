@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMoments[] }) {
   const { setUser, setLoading } = useFarcasterStore()
   const router = useRouter()
-  const { isConnected } = useConnection()
+  const { isConnected, address } = useConnection()
 
   const [userName, setUserName] = useState('')
   const [error, setError] = useState("")
@@ -25,6 +25,13 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
   const [isLoading, setIsLoading] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [inUsd, setInUsd] = useState("0")
+
+  // Refresh on address change
+  useEffect(() => {
+    setTimeout(() => {
+      router.refresh()
+    }, 2000)
+  }, [address])
 
   // fetch farcaster data
   useEffect(() => {
@@ -153,6 +160,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
                         <div 
                             className="flex items-center justify-center relative overflow-hidden"
                             style={{ maxHeight: '65vh' }}
+                            onClick={() => router.push(`nft/${moment.tokenId}/${address}`)}
                         >
                             {/* Blurred background */}
                             <div 
@@ -218,7 +226,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
                                             <span className="flex items-center justify-center">
                                                 <CircleX size={35} className="text-white" />
                                             </span>
-                                            <span className="">Failed to Buy NFT! Try Again!</span>
+                                            <span className="">Failed to Buy NFT!</span>
                                             </div>
                                         )
                                     }
