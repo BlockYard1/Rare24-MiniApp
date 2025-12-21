@@ -122,7 +122,7 @@ export default function TermsOfUsePage() {
                 </div>
               </div>
               <p className="text-lg">
-                This split applies to all initial NFT mints purchased directly from the creator's post.
+                This split applies to all initial NFT mints purchased directly from the creator's post. Funds are directly sent to the creator wallet used to share the post upon minting.
               </p>
             </div>
           </div>
