@@ -23,7 +23,7 @@ export default function ProfileClient(
       parsedUserNfts
     } : Props
 ) {
-  const { isConnected } = useConnection()
+  const { isConnected, address } = useConnection()
   const user = useFarcasterStore((state) => state.user)
   const route = useRouter()
 
@@ -229,7 +229,7 @@ export default function ProfileClient(
                     displayItems.map((item) => (
                       <div
                         key={item.tokenId}
-                        onClick={() => route.push(`/nft/${item.tokenId}`)}
+                        onClick={() => route.push(`/nft/${item.tokenId}/${address}`)}
                         className="aspect-square rounded-md border-2 border-foreground/20 hover:border-foreground/40 transition-colors bg-card cursor-pointer relative overflow-hidden"
                       >
                         <img 
@@ -266,7 +266,7 @@ export default function ProfileClient(
                                   src={item.image || "/placeholder.svg"} 
                                   alt={item.id.toString()} 
                                   className="object-cover" 
-                                  onClick={() => route.push(`/nft/${item.tokenId}`)}
+                                  onClick={() => route.push(`/nft/${item.tokenId}/${address}`)}
                                 />
                               </div>
 
