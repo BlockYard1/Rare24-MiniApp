@@ -11,8 +11,6 @@ interface PageProps {
 
 export default async function ProfilePage({ params }: PageProps) {
   const { username, address } = await params
-
-  console.log(`Address: ${address}`)
   
   // Validate username
   if (!username || !address) {
