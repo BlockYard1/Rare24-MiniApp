@@ -55,8 +55,18 @@ export default function BottomNavigation() {
                 ${isActive ? "bg-[#00B7B5]/50 text-[#005461] dark:text-[#F4F4F4]" : "text-muted-foreground hover:text-foreground"}
               `}
               aria-label={item.label}
-            >
-              <Icon className="w-7 h-7" />
+            > 
+              {
+                (item.label === "Profile" && user) ? (
+                  <img 
+                    src={`${user?.pfpUrl}`} 
+                    alt={`${user?.username} Profile Picture`}
+                    className="w-10 rounded-full object-contain"
+                  />
+                ) : (
+                  <Icon className="w-7 h-7" />
+                )
+              }
             </Link>
           )
         })}
