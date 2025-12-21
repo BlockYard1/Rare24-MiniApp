@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Heart, LoaderCircle, CircleCheck, CircleX } from 'lucide-react';
 import OrdersListingTable from "@/app/components/orders-listing-table";
 import { getUserBalance } from "@/app/blockchain/getterHooks";
-import { MomentDetails, MomentsSaleData, ActivityVolumeData } from "@/app/types/index.t";
+import { MomentDetails, MomentsSaleData } from "@/app/types/index.t";
 import { useFarcasterStore } from "@/app/store/useFarcasterStore";
 import { useConnection, Config, useBalance } from "wagmi";
 import Modal from "@/app/components/modal";
@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 
 interface Props {
     tokenId: number,
+    balance: number,
     moment: MomentDetails,
     momentSale: MomentsSaleData
 }
@@ -24,6 +25,7 @@ interface Props {
 export default function NFTDetailsClient(
     {
         tokenId,
+        balance,
         moment,
         momentSale
     } : Props
@@ -41,13 +43,11 @@ export default function NFTDetailsClient(
     const [price, setPrice] = useState("");
     const [emptyPrice, setEmptyPrice] = useState(false)
     const [amount, setAmount] = useState("");
-    const [balance, setTokenBalance] = useState(0)
     const [emptyAmount, setEmptyAmount] = useState(false)
     const [activeTab, setActiveTab] = useState("orders")
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false)
-    const [ethBalance, setEthBalance] = useState(0)
     const [selectedId, setSelectedId] = useState<number | null>(null)
 
     const tabs = [
@@ -56,25 +56,8 @@ export default function NFTDetailsClient(
         // { id: "activity", label: "Activity" },
     ]
 
-    // fetch user's token balance
-    useEffect(() => {
-        const fetchBalance = async() => {
-            const balances = await getUserBalance(Number(tokenId), address as `0x${string}`)
-            if(balances) {
-                setTokenBalance(balances)
-            }
-        }
-        fetchBalance()
-    }, [])
-
     // fetch user's ETH balance
-    useEffect(() => {
-        if(data){
-            const formattedEther = formatEther(data?.value)
-            setEthBalance(Number(formattedEther))
-        }
-
-    }, [])
+    const ethBalance = data ? Number(formatEther(data.value)) : 0
 
     const handleBuyNow = async () => {
         setIsHandLoading(true)
