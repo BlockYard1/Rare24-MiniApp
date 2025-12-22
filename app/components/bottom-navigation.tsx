@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Plus, Tags, Home, Search, User } from "lucide-react"
 import { useFarcasterStore } from "../store/useFarcasterStore"
@@ -10,6 +11,13 @@ export default function BottomNavigation() {
   const pathname = usePathname()
   const user = useFarcasterStore((state) => state.user)
   const { address } = useConnection()
+
+  const [mounted, setMounted] = useState(false)
+
+  // Ensure component is mounted
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const navItems = [
     {
@@ -33,7 +41,7 @@ export default function BottomNavigation() {
       label: "Search",
     },
     {
-      href: `/profile/${user ? user.username : 'NaN'}/${address}`,
+      href: mounted ? `/profile/${user ? user.username : 'NaN'}/${address}` : '',
       icon: User,
       label: "Profile",
     },

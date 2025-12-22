@@ -18,8 +18,14 @@ export default function TopBar() {
 
   const { setNotify, setLoading, notify, loading } = useNotificationStore()
   const [hasAttemptedSwitch, setHasAttemptedSwitch] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   console.log(`address>: ${address} ${isConnected} ${chain?.name}`)
+
+  // Ensure component is mounted
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Switch network if needed
   useEffect(() => {
@@ -89,7 +95,7 @@ export default function TopBar() {
           </Link>
           <div>
             {
-              !isConnected && (
+              !isConnected && mounted && (
                 <button 
                   onClick={() => connect({ connector: connectors[0] })}
                   disabled={isConnected}
