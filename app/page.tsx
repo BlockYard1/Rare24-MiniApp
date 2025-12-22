@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
         version: "1",
         imageUrl: "https://rare24.vercel.app/hero.png",
         button: {
-          title: "Join Rare24",
+          title: "Share A Moment With Rare24",
           action: {
             name: `Launch Rare24`,
             url: "https://rare24.vercel.app"
