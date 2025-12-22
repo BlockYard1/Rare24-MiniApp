@@ -31,6 +31,6 @@
         "ogTitle": "Rare24",
         "ogDescription": "Discover, collect, and own rare moments from your favourite creators each day",
         "ogImageUrl": "https://rare24.xyz/hero.png",
-        "noindex": false
+        "webhookUrl": "https://rare24.xyz/api/webhook"
     }
 }
