@@ -1,17 +1,30 @@
 import { http, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
-import { baseAccount, injected } from 'wagmi/connectors'
+import { baseAccount } from 'wagmi/connectors'
+import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector'
+
+// Detect environment
+const isFarcaster = typeof window !== 'undefined' && 
+  (window.location.ancestorOrigins?.contains('warpcast.com') ||
+   window.location.ancestorOrigins?.contains('farcaster.xyz') ||
+   // @ts-ignore
+   window.parent !== window && window.parent?.frames?.length > 0);
+
+const getConnectors = () => {
+  if (isFarcaster) {
+    return [miniAppConnector()];
+  }
+  // For Base App
+  return [baseAccount({
+    appName: 'Rare24',
+    appLogoUrl: 'https://rare24.vercel.app/icon.png'
+  })];
+};
 
 export const config = createConfig({
   chains: [baseSepolia],
   transports: {
     [baseSepolia.id]: http(process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC),
   },
-  connectors: [
-    baseAccount({
-      appName: 'Rare24',
-      appLogoUrl: 'https://rare24.vercel.app/icon.png', // Optional but recommended
-    }),
-    injected(),
-  ]
+  connectors: getConnectors()
 })
