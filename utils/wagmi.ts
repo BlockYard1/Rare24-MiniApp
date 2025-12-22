@@ -1,5 +1,5 @@
 import { http, createConfig } from 'wagmi'
-import { baseSepolia } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 import { baseAccount } from 'wagmi/connectors'
 import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector'
   
@@ -19,9 +19,9 @@ const getConnectors = () => {
 };
 
 export const config = createConfig({
-  chains: [baseSepolia],
+  chains: [base],
   transports: {
-    [baseSepolia.id]: http(process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC),
+    [base.id]: http(process.env.BASE_MAINNET_RPC),
   },
   connectors: getConnectors()
 })

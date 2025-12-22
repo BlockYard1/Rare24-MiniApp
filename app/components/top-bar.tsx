@@ -7,7 +7,7 @@ import { useConnection, useConnectors, useConnect, useSwitchChain } from 'wagmi'
 import { usePathname } from "next/navigation"
 import { useNotificationStore } from "../store/useFarcasterStore"
 import { checkNotification } from "../blockchain/getterHooks"
-import { baseSepolia } from "viem/chains"
+import { base } from "viem/chains"
 
 export default function TopBar() {
   const { switchChain, isError } = useSwitchChain()
@@ -30,8 +30,8 @@ export default function TopBar() {
   // Switch network if needed
   useEffect(() => {
     // Only switch if connected and not on Base
-    if (isConnected && chain?.id !== baseSepolia.id && !hasAttemptedSwitch) {
-      switchChain({ chainId: baseSepolia.id })
+    if (isConnected && chain?.id !== base.id && !hasAttemptedSwitch) {
+      switchChain({ chainId: base.id })
       setHasAttemptedSwitch(true)
     }
   }, [isConnected, chain?.id, switchChain, hasAttemptedSwitch])
@@ -110,7 +110,7 @@ export default function TopBar() {
                 <button 
                   onClick={() => {
                     setHasAttemptedSwitch(false)
-                    switchChain({ chainId: baseSepolia.id })
+                    switchChain({ chainId: base.id })
                   }}
                   disabled={isConnected}
                   className={``}
