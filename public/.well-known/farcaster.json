@@ -7,16 +7,16 @@
     "miniapp": {
         "version": "1",
         "name": "Rare24",
-        "homeUrl": "https://rare24.vercel.app",
-        "iconUrl": "https://rare24.vercel.app/icon.png",
-        "splashImageUrl": "https://rare24.vercel.app/splash.png",
+        "homeUrl": "https://rare24-mini-app-b136.vercel.app",
+        "iconUrl": "https://rare24-mini-app-b136.vercel.app/icon.png",
+        "splashImageUrl": "https://rare24-mini-app-b136.vercel.app/splash.png",
         "splashBackgroundColor": "#00b7b5",
         "subtitle": "Own Rare Moments",
         "description": "Discover, collect, and own rare moments from your favourite creators each day",
         "screenshotUrls": [
-            "https://rare24.vercel.app/s1.png",
-            "https://rare24.vercel.app/s2.png",
-            "https://rare24.vercel.app/s3.png"
+            "https://rare24-mini-app-b136.vercel.app/s1.png",
+            "https://rare24-mini-app-b136.vercel.app/s2.png",
+            "https://rare24-mini-app-b136.vercel.app/s3.png"
         ],
         "primaryCategory": "social",
         "tags": [
@@ -26,11 +26,11 @@
             "rare",
             "moments"
         ],
-        "heroImageUrl": "https://rare24.vercel.app/hero.png",
+        "heroImageUrl": "https://rare24-mini-app-b136.vercel.app/hero.png",
         "tagline": "Own Rare Moments",
         "ogTitle": "Rare24",
         "ogDescription": "Discover, collect, and own rare moments from your favourite creators each day",
-        "ogImageUrl": "https://rare24.vercel.app/hero.png",
+        "ogImageUrl": "https://rare24-mini-app-b136.vercel.app/hero.png",
         "noindex": false
     }
 }
