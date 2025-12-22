@@ -88,9 +88,6 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
             setUser(userData)
             setUserName(userData.username)
           }
-
-          // Ensure SDK is ready
-          await sdk.actions.ready()
         }
       } catch (error) {
         console.error('Error loading Farcaster user:', error)
