@@ -2,13 +2,6 @@ import { http, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { baseAccount } from 'wagmi/connectors'
 import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector'
-
-// Detect environment
-// const isFarcaster = typeof window !== 'undefined' && 
-//   (window.location.ancestorOrigins?.contains('warpcast.com') ||
-//    window.location.ancestorOrigins?.contains('farcaster.xyz') ||
-//    // @ts-ignore
-//    window.parent !== window && window.parent?.frames?.length > 0);
   
 const isFarcaster = typeof window !== 'undefined' && 
 // @ts-ignore
