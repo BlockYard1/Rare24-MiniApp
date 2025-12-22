@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@base-org/account": "~2.4.0",
+    "@coinbase/wallet-sdk": "^4.3.7",
     "@farcaster/miniapp-sdk": "^0.2.1",
     "@farcaster/miniapp-wagmi-connector": "^1.1.0",
     "@farcaster/quick-auth": "^0.0.8",
