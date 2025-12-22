@@ -5,8 +5,8 @@ import { getFarcasterUser } from "./backend/farcasterUser";
 import { sdk } from "@farcaster/miniapp-sdk"
 import { useFarcasterStore } from "./store/useFarcasterStore";
 import { config } from "@/utils/wagmi";
-import { simulateContract, writeContract, waitForTransactionReceipt, injected } from "@wagmi/core"
-import { Config, useConnection, useConnect } from "wagmi";
+import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
+import { Config, useConnection, useConnect, useConnectors } from "wagmi";
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "./blockchain/core";
 import { parseEther } from "viem";
 import { LoaderCircle, Heart, CircleCheck, CircleX } from "lucide-react";
@@ -14,13 +14,13 @@ import { SharedMoments } from "./types/index.t";
 import { getEthPrice } from "./backend/price";
 import { useRouter } from "next/navigation";
 import OnboardingFlow from "./components/onboarding";
-import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector'
 
 export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMoments[] }) {
   const { setUser, setLoading } = useFarcasterStore()
   const router = useRouter()
   const { isConnected, address } = useConnection()
   const { connect } = useConnect()
+  const connectors = useConnectors()
 
   const [userName, setUserName] = useState('')
   const [error, setError] = useState("")
@@ -49,7 +49,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
     
     // Auto-connect wallet
     try {
-      connect({ connector: miniAppConnector() });
+      connect({ connector: connectors[0] });
     } catch (error) {
       console.error('Connection failed:', error);
     }
