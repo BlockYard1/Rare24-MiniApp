@@ -77,7 +77,7 @@ export default function OnboardingFlow({ onComplete }: { onComplete: () => void 
                     <img 
                         src={steps[currentStep].imageUrl} 
                         alt={steps[currentStep].imageUrl}
-                        className="max-h-[30vh] w-auto h-auto object-contain relative z-10"
+                        className="max-h-[10vh] w-auto h-auto object-contain relative z-10"
                     />
                 </div>
                 

@@ -14,6 +14,7 @@ import { SharedMoments } from "./types/index.t";
 import { getEthPrice } from "./backend/price";
 import { useRouter } from "next/navigation";
 import OnboardingFlow from "./components/onboarding";
+import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-connector'
 
 export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMoments[] }) {
   const { setUser, setLoading } = useFarcasterStore()
@@ -48,7 +49,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
     
     // Auto-connect wallet
     try {
-      connect({ connector: injected() });
+      connect({ connector: miniAppConnector() });
     } catch (error) {
       console.error('Connection failed:', error);
     }
