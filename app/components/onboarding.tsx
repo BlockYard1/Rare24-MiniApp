@@ -45,7 +45,7 @@ export default function OnboardingFlow({ onComplete }: { onComplete: () => void 
 
   return (
     <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`bg-background rounded-2xl max-w-md w-full p-8 relative transform transition-all duration-300 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+      <div className={`bg-background rounded-2xl max-w-md w-full max-h-[90vh] p-8 relative transform transition-all duration-300 flex flex-col ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         {/* Skip button */}
         <button
           onClick={handleSkip}
@@ -71,13 +71,13 @@ export default function OnboardingFlow({ onComplete }: { onComplete: () => void 
         </div>
 
         {/* Content */}
-        <div className="">
+        <div className="overflow-y-auto flex-1 mb-6">
             <div className='text-center'>
                 <div className="flex justify-center mb-5">
                     <img 
                         src={steps[currentStep].imageUrl} 
                         alt={steps[currentStep].imageUrl}
-                        className="max-h-[50vh] w-auto h-auto object-contain relative z-10"
+                        className="max-h-[30vh] w-auto h-auto object-contain relative z-10"
                     />
                 </div>
                 
