@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CreatorNftData, UserData} from "@/app/types/index.t";
 import { useRouter } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
+import { useConnection } from "wagmi";
 
 interface Props {
     parsedMoments: CreatorNftData,
@@ -17,6 +18,7 @@ function formatNumberWithCommas(num: number | string): string {
 export default function UserClient({ parsedMoments, user } : Props) {
   const route = useRouter()
   const [moments, setMoments] = useState<CreatorNftData | null>(null)
+  const { address } = useConnection()
 
   // set initialActivity
   useEffect(() => {
@@ -81,7 +83,7 @@ export default function UserClient({ parsedMoments, user } : Props) {
                     moments?.Nfts.map((item) => (
                         <div
                             key={item.tokenId}
-                            onClick={() => route.push(`/nft/${item.tokenId}`)}
+                            onClick={() => route.push(`/nft/${item.tokenId}/${address}`)}
                             className="aspect-square rounded-md border-2 border-foreground/20 hover:border-foreground/40 transition-colors bg-card cursor-pointer relative overflow-hidden"
                         >
                             <img 
