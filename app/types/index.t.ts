@@ -95,6 +95,7 @@ export interface TokenListings {
 export interface SharedMoments {
     tokenId: number;
     creator: string;
+    creator_fid: number | null;
     pfpUrl: string;
     price: string;
     amount: string;
