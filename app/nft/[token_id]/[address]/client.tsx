@@ -253,7 +253,10 @@ export default function NFTDetailsClient(
             </div>
             {/* Moment Details */}
             <div className="flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300">
-                <div className="flex items-center gap-2">
+                <div 
+                    className="flex items-center gap-2"
+                    onClick={() => route.push(`/user/${moment?.creator_fid}/${moment?.creator}`)}
+                >
                     <img 
                         src={moment?.pfpUrl} 
                         alt={moment?.creator}
