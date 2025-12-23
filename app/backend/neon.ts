@@ -61,6 +61,31 @@ export async function searchUsers(query: string, limit: number = 10) {
   }
 }
 
+// Get user by exact username match
+export async function getUserByUsername(username: string) {
+  try {
+    if (!username || username.trim().length === 0) {
+      return { success: false, error: 'Username is required', fid: null };
+    }
+
+    // Use exact match with LOWER() for case-insensitive comparison
+    const result = await sql`
+      SELECT * FROM farcaster_users
+      WHERE LOWER(username) = LOWER(${username.trim()})
+      LIMIT 1
+    ` as FarcasterUser[];
+
+    if (result.length === 0) {
+      return { success: false, error: 'User not found', fid: null };
+    }
+
+    return { success: true, fid: result[0].fid };
+  } catch (error) {
+    console.error('Error fetching user by username:', error);
+    return { success: false, error: 'Failed to fetch user', fid: null };
+  }
+}
+
 // // Get a specific user by FID
 // export async function getUserByFid(fid: number) {
 //   try {
