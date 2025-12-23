@@ -41,7 +41,7 @@ export default function SearchClient() {
         <label className={`flex items-center w-full justify-between gap-2 cursor-pointer p-2 border dark:bg-[#222529] bg-teal-500/10 border-teal-700 rounded-full text-lg`}>
           <input
             type="text"
-            placeholder="Search Farcaster users..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 w-full outline-none font-semibold text-gray-700 dark:text-gray-300"
