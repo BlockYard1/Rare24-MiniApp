@@ -29,7 +29,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
   const [isLoading, setIsLoading] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [inUsd, setInUsd] = useState("0")
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // console.log("Rendering HomeClient with moments:", JSON.stringify(sharedMoments[0].creator));
 
@@ -197,118 +197,121 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
         )
       }
       {
-          sharedMoments?.map((moment) => {
-            return(
-              <div className="border-b border-gray-500/30" key={moment.tokenId}>
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <img 
-                            src={moment?.pfpUrl} 
-                            alt={moment?.creator}
-                            className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <span className="text-gray-700 dark:text-gray-300 font-semibold text-lg">{moment?.creator}</span>
-                    </div>
-                    
-                    <span className="text-gray-700 dark:text-gray-300 text-md">{moment?.expires}</span>
-                </div>
-                {/* Image */}
+        sharedMoments?.map((moment) => {
+          return(
+            <div className="border-b border-gray-500/30" key={moment.tokenId}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3">
                 <div 
-                    className="flex items-center justify-center relative overflow-hidden"
-                    style={{ maxHeight: '65vh' }}
-                    onClick={() => router.push(`nft/${moment.tokenId}/${address}`)}
+                  className="flex items-center gap-3"
+                  onClick={() => router.push(`/user/${moment.creator_fid ?? ''}/${moment.creator}`)}
                 >
-                    {/* Blurred background */}
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center blur-2xl scale-110"
-                        style={{ backgroundImage: `url(${moment?.imageUrl})` }}
-                    />
-                    
-                    {/* Actual image */}
-                    <img 
-                        src={moment?.imageUrl} 
-                        alt={moment?.creator}
-                        className="max-h-[65vh] w-auto h-auto object-contain relative z-10"
-                    />
+                  <img 
+                    src={moment?.pfpUrl} 
+                    alt={moment?.creator}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300 font-semibold text-lg">{moment?.creator}</span>
                 </div>
-                {/* Moment Details */}
-                <div className="flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300">
-                    <div 
-                        className="flex items-center justify-even gap-2"
-                        onClick={async() => {
-                          if(isConnected) {
-                            setSelectedId(moment.tokenId)
-                            if(ethBalance < Number(moment.price)) 
-                              handleInsufficientFunds()
-                            else
-                              await handleBuyNow(moment.tokenId, moment.price)
-                          }
-                        }}
-                    >
-                        <Heart size={25} className="text-red-500"/>
-                        <span className="text-lg font-semibold">{moment?.sold}/{moment?.amount}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <img 
-                            src="/eth_light.png" 
-                            alt={moment?.creator}
-                            className="w-3 object-cover hidden dark:block"
-                        />
-                        <img 
-                            src="/eth_dark.png" 
-                            alt={moment?.creator}
-                            className="w-5 object-cover dark:hidden"
-                        />
-                        <p className="text-lg font-semibold">
-                            <span className="font-semibold">
-                                {moment?.price}, ${(Number(moment?.price) * Number(inUsd)).toFixed(2)}
-                            </span>
-                        </p>
-                    </div>
-                </div>
-                {
-                  selectedId === moment.tokenId && (
-                      <div className="p-5">
-                        {
-                          isLoading && (
-                              <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
-                              <span className="text-lg text-white">Buying NFT ...</span>
-                              <span className="flex items-center justify-center">
-                                  <LoaderCircle size={35} className="animate-spin text-white" />
-                              </span>
-                              </div>
-                          )
-                        }
-                        {
-                          error && (
-                              <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
-                              <span className="flex items-center justify-center">
-                                  <CircleX size={35} className="text-white" />
-                              </span>
-                              <span className="">{error}</span>
-                              </div>
-                          )
-                        }
-                        {
-                          success && (
-                              <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
-                              <span className="flex items-center justify-center">
-                                  <CircleCheck size={35} className="text-white" />
-                              </span>
-                              <span className="">NFT Bought</span>
-                              </div>
-                          )
-                        }
-                      </div>
-                  )
-                }
-                <div className="px-4 pb-8 space-y-2 text-gray-700 dark:text-gray-300">
-                    <p className="text-lg">{moment?.desc}</p>
-                </div>
+                
+                <span className="text-gray-700 dark:text-gray-300 text-md">{moment?.expires}</span>
               </div>
-            )
-          })
+              {/* Image */}
+              <div 
+                  className="flex items-center justify-center relative overflow-hidden"
+                  style={{ maxHeight: '65vh' }}
+                  onClick={() => router.push(`nft/${moment.tokenId}/${address}`)}
+              >
+                  {/* Blurred background */}
+                  <div 
+                      className="absolute inset-0 bg-cover bg-center blur-2xl scale-110"
+                      style={{ backgroundImage: `url(${moment?.imageUrl})` }}
+                  />
+                  
+                  {/* Actual image */}
+                  <img 
+                      src={moment?.imageUrl} 
+                      alt={moment?.creator}
+                      className="max-h-[65vh] w-auto h-auto object-contain relative z-10"
+                  />
+              </div>
+              {/* Moment Details */}
+              <div className="flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <div 
+                      className="flex items-center justify-even gap-2"
+                      onClick={async() => {
+                        if(isConnected) {
+                          setSelectedId(moment.tokenId)
+                          if(ethBalance < Number(moment.price)) 
+                            handleInsufficientFunds()
+                          else
+                            await handleBuyNow(moment.tokenId, moment.price)
+                        }
+                      }}
+                  >
+                      <Heart size={25} className="text-red-500"/>
+                      <span className="text-lg font-semibold">{moment?.sold}/{moment?.amount}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                      <img 
+                          src="/eth_light.png" 
+                          alt={moment?.creator}
+                          className="w-3 object-cover hidden dark:block"
+                      />
+                      <img 
+                          src="/eth_dark.png" 
+                          alt={moment?.creator}
+                          className="w-5 object-cover dark:hidden"
+                      />
+                      <p className="text-lg font-semibold">
+                          <span className="font-semibold">
+                              {moment?.price}, ${(Number(moment?.price) * Number(inUsd)).toFixed(2)}
+                          </span>
+                      </p>
+                  </div>
+              </div>
+              {
+                selectedId === moment.tokenId && (
+                    <div className="p-5">
+                      {
+                        isLoading && (
+                            <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                            <span className="text-lg text-white">Buying NFT ...</span>
+                            <span className="flex items-center justify-center">
+                                <LoaderCircle size={35} className="animate-spin text-white" />
+                            </span>
+                            </div>
+                        )
+                      }
+                      {
+                        error && (
+                            <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                            <span className="flex items-center justify-center">
+                                <CircleX size={35} className="text-white" />
+                            </span>
+                            <span className="">{error}</span>
+                            </div>
+                        )
+                      }
+                      {
+                        success && (
+                            <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
+                            <span className="flex items-center justify-center">
+                                <CircleCheck size={35} className="text-white" />
+                            </span>
+                            <span className="">NFT Bought</span>
+                            </div>
+                        )
+                      }
+                    </div>
+                )
+              }
+              <div className="px-4 pb-8 space-y-2 text-gray-700 dark:text-gray-300">
+                  <p className="text-lg">{moment?.desc}</p>
+              </div>
+            </div>
+          )
+        })
       }
     </div>
   );
