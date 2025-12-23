@@ -5,8 +5,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { config } from "@/utils/wagmi"
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
-import { parseEther } from "viem"
-import { Config, useConnection } from "wagmi"
+import { parseEther, formatEther } from "viem"
+import { Config, useConnection, useBalance } from "wagmi"
 import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "../blockchain/core"
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { TokenListings } from "../types/index.t"
@@ -16,12 +16,16 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
   const route = useRouter()
   const { isConnected, address } = useConnection()
   const user = useFarcasterStore((state) => state.user)
+  const { data } = useBalance({ address })
 
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [inUsd, setInUsd] = useState("0")
+
+  // fetch user's ETH balance
+  const ethBalance = data ? Number(formatEther(data.value)) : 0
 
   // Refresh on address change
   useEffect(() => {
@@ -43,6 +47,7 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
     ethInUsd()
   }, []);
 
+  // Buy NFT
   const handleBuyNow = async (listingId:number, price: string) => {   
     let didSucceed = false
 
@@ -83,6 +88,15 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
         }
       }, 5000)
     }
+  }
+
+  // Handle insufficient funds
+  const handleInsufficientFunds = () => {
+    setError("Insufficient ETH Balance!")
+    setTimeout(() => {
+      setError("")
+      setSelectedId(null)
+    }, 5000)
   }
 
   // No NFT found
@@ -147,7 +161,10 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
                                 onClick={async() => {
                                   if(isConnected) {
                                     setSelectedId(listing.listingId)
-                                    await handleBuyNow(listing.listingId, listing.price)
+                                    if(ethBalance < Number(listing.price)) 
+                                      handleInsufficientFunds()
+                                    else
+                                      await handleBuyNow(listing.listingId, listing.price)
                                   }
                                 }}
                             >
@@ -175,7 +192,7 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
                                     <span className="flex items-center justify-center">
                                         <CircleX size={35} className="text-white" />
                                     </span>
-                                    <span className="">Failed to Buy NFT! Try Again!</span>
+                                    <span className="">{error}</span>
                                     </div>
                                 )
                                 }

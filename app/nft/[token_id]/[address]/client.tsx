@@ -473,7 +473,7 @@ export default function NFTDetailsClient(
                                 {
                                     error && (
                                         <div className="text-center text-red-200 rounded-lg bg-red-500 flex flex-col py-2 font-semibold text-lg">
-                                            <span className="">{`${error} Try Again!`}</span>
+                                            <span className="">{error}</span>
                                         </div>
                                     )
                                 }
@@ -567,7 +567,7 @@ export default function NFTDetailsClient(
                                                             <span className="flex items-center justify-center">
                                                             <CircleX size={35} className="text-white" />
                                                             </span>
-                                                            <span className="">Failed! Try Again!</span>
+                                                            <span className="">{error}</span>
                                                         </div>
                                                         )
                                                     }

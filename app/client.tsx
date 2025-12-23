@@ -6,9 +6,9 @@ import { sdk } from "@farcaster/miniapp-sdk"
 import { useFarcasterStore } from "./store/useFarcasterStore";
 import { config } from "@/utils/wagmi";
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
-import { Config, useConnection, useConnect, useConnectors } from "wagmi";
+import { Config, useConnection, useConnect, useConnectors, useBalance } from "wagmi";
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "./blockchain/core";
-import { parseEther } from "viem";
+import { parseEther, formatEther } from "viem";
 import { LoaderCircle, Heart, CircleCheck, CircleX } from "lucide-react";
 import { SharedMoments } from "./types/index.t";
 import { getEthPrice } from "./backend/price";
@@ -21,6 +21,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
   const { isConnected, address } = useConnection()
   const { connect } = useConnect()
   const connectors = useConnectors()
+  const { data } = useBalance({ address })
 
   const [userName, setUserName] = useState('')
   const [error, setError] = useState("")
@@ -30,7 +31,10 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
   const [inUsd, setInUsd] = useState("0")
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  console.log("Rendering HomeClient with moments:", JSON.stringify(sharedMoments[0].creator));
+  // console.log("Rendering HomeClient with moments:", JSON.stringify(sharedMoments[0].creator));
+
+  // fetch user's ETH balance
+  const ethBalance = data ? Number(formatEther(data.value)) : 0
 
   useEffect(() => {
     // Check if user has seen onboarding
@@ -114,6 +118,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
     ethInUsd()
   }, []);
 
+  // Buy NFT
   const handleBuyNow = async (tokenId:number, price: string) => {    
     let didSucceed = false
 
@@ -152,6 +157,15 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
         }
       }, 5000)
     }
+  }
+
+  // Handle insufficient funds
+  const handleInsufficientFunds = () => {
+    setError("Insufficient ETH Balance!")
+    setTimeout(() => {
+      setError("")
+      setSelectedId(null)
+    }, 5000)
   }
   
   // No NFT found
@@ -225,7 +239,10 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
                         onClick={async() => {
                           if(isConnected) {
                             setSelectedId(moment.tokenId)
-                            await handleBuyNow(moment.tokenId, moment.price)
+                            if(ethBalance < Number(moment.price)) 
+                              handleInsufficientFunds()
+                            else
+                              await handleBuyNow(moment.tokenId, moment.price)
                           }
                         }}
                     >
@@ -253,36 +270,36 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
                 {
                   selectedId === moment.tokenId && (
                       <div className="p-5">
-                          {
-                              isLoading && (
-                                  <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
-                                  <span className="text-lg text-white">Buying NFT ...</span>
-                                  <span className="flex items-center justify-center">
-                                      <LoaderCircle size={35} className="animate-spin text-white" />
-                                  </span>
-                                  </div>
-                              )
-                          }
-                          {
-                              error && (
-                                  <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
-                                  <span className="flex items-center justify-center">
-                                      <CircleX size={35} className="text-white" />
-                                  </span>
-                                  <span className="">Failed to Buy NFT!</span>
-                                  </div>
-                              )
-                          }
-                          {
-                              success && (
-                                  <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
-                                  <span className="flex items-center justify-center">
-                                      <CircleCheck size={35} className="text-white" />
-                                  </span>
-                                  <span className="">NFT Bought</span>
-                                  </div>
-                              )
-                          }
+                        {
+                          isLoading && (
+                              <div className="text-center text-blue-200 rounded-lg bg-blue-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                              <span className="text-lg text-white">Buying NFT ...</span>
+                              <span className="flex items-center justify-center">
+                                  <LoaderCircle size={35} className="animate-spin text-white" />
+                              </span>
+                              </div>
+                          )
+                        }
+                        {
+                          error && (
+                              <div className="text-center text-red-100 rounded-lg bg-red-500 flex flex-col gap-1 py-2 font-semibold text-lg">
+                              <span className="flex items-center justify-center">
+                                  <CircleX size={35} className="text-white" />
+                              </span>
+                              <span className="">{error}</span>
+                              </div>
+                          )
+                        }
+                        {
+                          success && (
+                              <div className="text-center text-green-100 rounded-lg bg-green-600 flex flex-col gap-1 items-center justify-center py-2 text-lg font-semibold ">
+                              <span className="flex items-center justify-center">
+                                  <CircleCheck size={35} className="text-white" />
+                              </span>
+                              <span className="">NFT Bought</span>
+                              </div>
+                          )
+                        }
                       </div>
                   )
                 }

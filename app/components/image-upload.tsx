@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
 import { getEthPrice } from "../backend/price"
-import { useConnection, Config } from 'wagmi'
+import { useConnection, Config, useBalance } from 'wagmi'
 import { simulateContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
-import { parseEther } from "viem"
+import { formatEther, parseEther } from "viem"
 import { getCreatorMomentsCount, checkIfCanPost } from "../blockchain/getterHooks"
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core"
 import { config } from "@/utils/wagmi"
@@ -18,8 +18,9 @@ import { saveUser } from "../backend/neon"
 
 export function ImageUploadCard() {
   const route = useRouter()
-  const { isConnected } = useConnection()
+  const { isConnected, address } = useConnection()
   const user = useFarcasterStore((state) => state.user)
+  const { data } = useBalance({ address })
 
   // console.log(`address: ${address} ${isConnected}`)
 
@@ -40,6 +41,9 @@ export function ImageUploadCard() {
   const [momentCount, setMomentCount] = useState(0)
   const [maxSupplyLimit, setMaxSupplyLimit] = useState(0)
   const [canPost, setCanPost] = useState<CanPost | null>(null)
+
+  // fetch user's ETH balance
+  const ethBalance = data ? Number(formatEther(data.value)) : 0
 
   // Image Size
   const MIN_WIDTH = 500
@@ -100,7 +104,7 @@ export function ImageUploadCard() {
     img.onload = () => {
       // Check dimensions
       if (img.width < MIN_WIDTH || img.width > MAX_WIDTH || img.height < MIN_HEIGHT || img.height > MAX_HEIGHT || img.width > img.height) {
-        setError(`Image Too Small or Too Large!`)
+        setError(`Invalid Image Dimensions!`)
         URL.revokeObjectURL(objectUrl)
         event.target.value = "" // Reset file input
         return
@@ -236,7 +240,8 @@ export function ImageUploadCard() {
                     <span className="animate-pulse">
                       <CircleX size={35} />
                     </span>
-                    <span className="text-lg font-semibold">Failed to Turn Moment Into NFT.</span>
+                    <span className="text-lg font-semibold">Failed to Turn Moment Into NFT. Image is Too Large!</span>
+                    <span className="text-lg font-semibold">Image is Too Large!</span>
                     <button onClick={() => closeStatus()} className="px-3 py-2 bg-red-600 rounded-lg text-white">
                       Let's Try Again
                     </button>
@@ -355,7 +360,7 @@ export function ImageUploadCard() {
           {/* Upload Button */}
           <button
             onClick={async() => await handleUpload()}
-            disabled={!canPost?.canPost || !isConnected}
+            disabled={!canPost?.canPost || !isConnected || ethBalance === 0}
             className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
           >
             {
@@ -365,7 +370,15 @@ export function ImageUploadCard() {
                 <>
                   {
                     canPost?.canPost ? (
-                      <Send className="text-blue-500 dark:text-blue-300" size={25} />
+                      <>
+                        {
+                          ethBalance === 0 ? (
+                            <span className="text-blue-500 dark:text-blue-300">Insufficient ETH Balance</span>
+                          ) : (
+                            <span className="text-blue-500 dark:text-blue-300">Share Moment</span>
+                          )
+                        }
+                      </>
                     ) : (
                       <span className="text-blue-500 dark:text-blue-300">Moment Sharable In {canPost?.toNext}</span>
                     )
