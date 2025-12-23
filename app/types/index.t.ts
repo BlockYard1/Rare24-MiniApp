@@ -41,6 +41,7 @@ export interface AlchemyNFTResponse {
 
 export interface MomentDetails {
     creator: string;
+    creator_fid: number | null;
     pfpUrl: string;
     imageUrl: string;
     desc: string;
