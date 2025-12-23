@@ -184,10 +184,14 @@ export async function getMomentById(tokenId: number) {
         args: [tokenId]
     }) as any;
 
-    const data = await fetchMetadata(moment.metadataURI);
+    const [data, creator_fid] = await Promise.all([
+        fetchMetadata(moment.metadataURI),
+        getUserByUsername(moment.creator as string)
+    ]);
 
     return {
         creator: moment.creator as string,
+        creator_fid: creator_fid.success ? creator_fid?.fid : null,
         pfpUrl: moment.pfpUrl as string,
         imageUrl: data.image,
         desc: data.desc,
