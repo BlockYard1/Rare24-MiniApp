@@ -8,6 +8,7 @@ import { formatEther } from "viem";
 // import { getAllFollowings } from "../backend/farcasterUser";
 import { getUsersTokenIds } from "../backend/alchemy";
 import { NFTDetails } from "../types/index.t";
+import { getUserByUsername } from "../backend/neon";
 
 /* RARE24 CONTRACT */
 
@@ -493,17 +494,29 @@ export async function getSharedMoments() {
     const metadataPromises = activeMoments.map((nft) => 
         fetchMetadata(nft.metadataURI)
     );
-
     const metadataResults: any[] = await Promise.all(metadataPromises);
 
-    // Combine all data (FIX: your original had [0] instead of [i])
+    // First, get all unique creators
+    const creators = [...new Set(activeMoments.map((m: any) => m.creator as string))];
+
+    // Fetch all user data in parallel
+    const userDataMap = new Map();
+    await Promise.all(
+        creators.map(async (creator) => {
+            const userData = await getUserByUsername(creator);
+            userDataMap.set(creator, userData.success ? userData?.fid : null);
+        })
+    );
+
+    // Then map with the cached data
     return activeMoments.map((moment: any, i: number) => ({
         tokenId: moment.tokenId as number,
         creator: moment.creator as string,
+        creator_fid: userDataMap.get(moment.creator) || null,
         pfpUrl: moment.pfpUrl as string,
         price: formatEther(BigInt(moment.price)),
         amount: moment.maxSupply as string,
-        sold: moment.totalMinted  as string,
+        sold: moment.totalMinted as string,
         imageUrl: metadataResults[i].image as string,
         desc: metadataResults[i].desc as string,
         expires: formatTime(Number(moment.expiresAt))
