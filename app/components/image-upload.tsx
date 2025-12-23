@@ -15,6 +15,7 @@ import { config } from "@/utils/wagmi"
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { CanPost } from "../types/index.t"
 import { saveUser } from "../backend/neon"
+import imageCompression from 'browser-image-compression'
 
 export function ImageUploadCard() {
   const route = useRouter()
@@ -97,6 +98,8 @@ export function ImageUploadCard() {
       return
     }
 
+    // console.log(`originalFile size ${file.size / 1024 / 1024} MB`);
+
     // Create an image element to check dimensions
     const img = new Image()
     const objectUrl = URL.createObjectURL(file)
@@ -167,9 +170,21 @@ export function ImageUploadCard() {
 
     try {
       // // new Promise(resolve => setTimeout(resolve, 5000))
+      let photo = image;
+
+      // Compress image if larger than 2MB
+      if (image && image.size > 2 * 1024 * 1024) {
+        photo = await imageCompression(image, {
+          maxWidthOrHeight: 1920,
+          maxSizeMB: 1,
+          initialQuality: 1,
+          useWebWorker: true,
+        });
+      }
+
       // Create FormData
       const formData = new FormData()
-      image && formData.append('image', image)
+      photo && formData.append('image', photo)
       formData.append('caption', caption)
       user && formData.append('creator', user?.username)
       formData.append('momentCount', momentCount.toString())
@@ -375,7 +390,7 @@ export function ImageUploadCard() {
                           ethBalance === 0 ? (
                             <span className="text-blue-500 dark:text-blue-300">Insufficient ETH Balance</span>
                           ) : (
-                            <span className="text-blue-500 dark:text-blue-300">Share Moment</span>
+                            <span className="text-blue-500 dark:text-blue-100">Share Moment</span>
                           )
                         }
                       </>
