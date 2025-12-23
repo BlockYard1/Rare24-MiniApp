@@ -30,6 +30,8 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
   const [inUsd, setInUsd] = useState("0")
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  console.log("Rendering HomeClient with moments:", JSON.stringify(sharedMoments[0].creator));
+
   useEffect(() => {
     // Check if user has seen onboarding
     const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');

@@ -6,6 +6,8 @@ export default async function HomePage() {
   try {
     const moments = await getSharedMoments()
 
+    console.log('Fetched Listings:', moments)
+
     return <HomeClient sharedMoments={moments} />
   } catch (error) {
     console.error('Error fetching Listings:', error)
