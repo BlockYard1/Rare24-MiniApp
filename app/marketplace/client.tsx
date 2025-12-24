@@ -24,6 +24,8 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [inUsd, setInUsd] = useState("0")
 
+  console.log("Rendering MarketplaceClient with moments:", JSON.stringify(listedTokens[0]?.creator));
+
   // fetch user's ETH balance
   const ethBalance = data ? Number(formatEther(data.value)) : 0
 
