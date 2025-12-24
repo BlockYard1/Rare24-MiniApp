@@ -20,13 +20,13 @@ export default async function HomePage() {
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Rare24",
-    description: "Discover, collect, and own rare moments from your favourite creators each day",
+    description: "Mint exclusive photo NFTs from your favourite creators daily. Only one moment drops every 24 hours, collect, trade, and own rare memories",
     other: {
       "fc:miniapp": JSON.stringify({
         version: "1",
         imageUrl: "https://rare24.xyz/hero.png",
         button: {
-          title: "Share A Moment With Rare24",
+          title: "Drop today's moment",
           action: {
             name: `Launch Rare24`,
             url: "https://rare24.xyz"
