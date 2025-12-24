@@ -2,24 +2,26 @@
 
 import { MessageCircleQuestionMark, FileText, AlertCircle, ImageOff, Coins, Clock, ChevronDown } from "lucide-react"
 import { useState } from "react"
+import { useTheme } from "next-themes"
 
 export default function TermsOfUsePage() {
   const lastUpdated = "December 19, 2025"
   const [openAccordion, setOpenAccordion] = useState<string | null>(null)
+  const { theme } = useTheme()
 
   const toggleAccordion = (value: string) => {
     setOpenAccordion(openAccordion === value ? null : value)
   }
 
   return (
-    <div className="min-h-screen bg-background my-16">
+    <div className={`min-h-screen my-16`}>
       {/* Main Content */}
       <main className="container max-w-4xl px-4 py-8">
         {/* Title Section */}
         <div className="mb-8 space-y-4 dark:text-gray-300 text-gray-700">
           <div className="inline-flex items-center gap-2 rounded-full dark:bg-gray-500/10 bg-gray-500/30 px-4 py-1.5">
-            <FileText className="h-4 w-4 text-primary" />
-            <span className="text-lg font-medium text-primary">Legal Document</span>
+            <FileText className="h-4 w-4" />
+            <span className="text-lg font-medium">Legal Document</span>
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-balance">Terms of Use</h1>
           <p className="text-lg leading-relaxed">
