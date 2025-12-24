@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation"
 import { useNotificationStore } from "../store/useFarcasterStore"
 import { checkNotification } from "../blockchain/getterHooks"
 import { base } from "viem/chains"
+import ThemeToggle from "./theme-toggle"
 
 export default function TopBar() {
   const { switchChain, isError } = useSwitchChain()
@@ -58,14 +59,15 @@ export default function TopBar() {
     <header className="fixed top-0 left-0 right-0 border-b-1 dark:border-gray-600 border-border bg-background z-50">
       <div className="flex items-center justify-between h-16 px-4 max-w-md mx-auto sm:max-w-none sm:px-6">
         {/* Info */}
-        <div>
+        <div className="flex items-center">
           <Link
             href="/info"
-            className={`relative flex items-center justify-center w-10 h-10 rounded-full ${pathname === "/info" && "bg-[#00B7B5]/50 text-[#005461]"} hover:bg-muted transition-colors`}
+            className={`relative flex items-center justify-center w-10 h-10 rounded-full ${pathname === "/info" && "bg-[#00B7B5]/50 text-[#005461] dark:text-[#F4F4F4]/80"} hover:bg-muted transition-colors`}
             aria-label="Info"
           >
-            <Info className={`${pathname === "/info" && "text-[#005461] dark:text-[#F4F4F4]/80"}`} size={30} />
+            <Info className={``} size={30} />
           </Link>
+          <ThemeToggle />
         </div>
         
         {/* Logo/Brand */}
