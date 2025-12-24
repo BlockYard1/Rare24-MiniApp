@@ -540,7 +540,7 @@ export default function NFTDetailsClient(
                                         ? (
                                             <>
                                                 {
-                                                    (offering || listing) && <span className="flex items-center justify-center">
+                                                    (offering || listing) && <span className="flex items-center justify-center text-blue-500 dark:text-blue-200">
                                                         <LoaderCircle size={30} className="animate-spin text-white" />
                                                     </span>
                                                 }
