@@ -267,9 +267,9 @@ export async function getMomentSaleData(tokenId: number) {
                     currentTimestamp <= Number(listing.expiresAt)
                 )
                 .map((listing: any) => ({
-                    id: listing.listingId as number,
+                    id: Number(listing.listingId),
                     account: listing.sellerName as string,
-                    amount: listing.amount as number,
+                    amount: Number(listing.amount),
                     price: formatEther(listing.pricePerToken),
                     expires: getTimeRemaining(Number(listing.expiresAt))
                 }));
@@ -293,9 +293,9 @@ export async function getMomentSaleData(tokenId: number) {
                     currentTimestamp <= Number(offer.expiresAt)
                 )
                 .map((offer: any) => ({
-                    id: offer.offerId as number,
+                    id: Number(offer.offerId),
                     account: offer.buyerName as string,
-                    amount: offer.amount as number,
+                    amount: Number(offer.amount),
                     price: formatEther(offer.offerPerToken),
                     expires: getTimeRemaining(Number(offer.expiresAt))
                 }));
@@ -599,13 +599,13 @@ export async function getUserOffersListings(username: string) {
                     args: [index]
                 }).then((nft: any) => ({
                     type: 'Listing',
-                    id: nft.listingId as number,
+                    id: Number(nft.listingId),
                     tokenId: Number(nft.tokenId),
                     price: formatEther(nft.pricePerToken),
                     amount: Number(nft.amount),
                     sold_rec: Number(nft.sold),
                     expiresAt: formatTime(Number(nft.expiresAt)),
-                    status: nft.status as number
+                    status: Number(nft.status)
                 }))
             );
             const listingResults = await Promise.all(listingPromises);
@@ -620,13 +620,13 @@ export async function getUserOffersListings(username: string) {
                     args: [index]
                 }).then((nft: any) => ({
                     type: 'Offer',
-                    id: nft.offerId as number,
+                    id: Number(nft.offerId),
                     tokenId: Number(nft.tokenId),
                     price: formatEther(nft.offerPerToken),
                     amount: Number(nft.amount),
                     sold_rec: Number(nft.received),
                     expiresAt: formatTime(Number(nft.expiresAt)),
-                    status: nft.status as number
+                    status: Number(nft.status)
                 }))
             );
             const offerResults = await Promise.all(offerPromises);
@@ -669,53 +669,61 @@ export async function getUserOffersListings(username: string) {
 }
 
 export async function checkNotification(userAddress: `0x${string}`) {
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    const MAX_OFFERS = 20;
+    return unstable_cache(
+        async () => {
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            const MAX_OFFERS = 20;
 
-    // get users holding
-    const [offerCount, tokenIds] = await Promise.all([
-        readContract(config as Config, {
-            abi: MARKETPLACE_CONTRACT_ABI,
-            address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
-            functionName: 'getOfferIdCounter',
-            args: []
-        }) as Promise<bigint>,
-        getUsersTokenIds(userAddress) as Promise<NFTDetails[]>
-    ])
+            // get users holding
+            const [offerCount, tokenIds] = await Promise.all([
+                readContract(config as Config, {
+                    abi: MARKETPLACE_CONTRACT_ABI,
+                    address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+                    functionName: 'getOfferIdCounter',
+                    args: []
+                }) as Promise<bigint>,
+                getUsersTokenIds(userAddress) as Promise<NFTDetails[]>
+            ])
 
-    const count = Number(offerCount);
-    const userTokenIds = new Set(
-        tokenIds.map(token => token.tokenId)
-    )
-    
-    // Fetch listings in parallel batches
-    const offerPromises = [];
-    for (let i = count; i > 0 && offerPromises.length < MAX_OFFERS * 2; i--) {
-        offerPromises.push(
-            readContract(config as Config, {
-                abi: MARKETPLACE_CONTRACT_ABI,
-                address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
-                functionName: 'getBuyOffer',
-                args: [i]
-            })
-        );
-    }
+            const count = Number(offerCount);
+            const userTokenIds = new Set(
+                tokenIds.map(token => token.tokenId)
+            )
+            
+            // Fetch listings in parallel batches
+            const offerPromises = [];
+            for (let i = count; i > 0 && offerPromises.length < MAX_OFFERS * 2; i--) {
+                offerPromises.push(
+                    readContract(config as Config, {
+                        abi: MARKETPLACE_CONTRACT_ABI,
+                        address: MARKETPLACE_CONTRACT_ADDRESS as `0x${string}`,
+                        functionName: 'getBuyOffer',
+                        args: [i]
+                    })
+                );
+            }
 
-    // Fetch all listings in parallel and filter
-    return (await Promise.all(offerPromises))
-        .filter((offer: any) => 
-            offer &&
-            Number(offer.status) === 0 && 
-            currentTimestamp < Number(offer.expiresAt) &&
-            userTokenIds.has(Number(offer.tokenId))
-        )
-        .slice(0, MAX_OFFERS)
-        .map((offer: any) => ({
-                tokenId: offer.tokenId as number,
-                buyer: offer.buyerName as string,
-                imageUrl: tokenIds.find(obj => obj.tokenId)?.imageUrl || '',
-                price: formatEther(offer.offerPerToken)
-            })
-        );
-
+            // Fetch all listings in parallel and filter
+            return (await Promise.all(offerPromises))
+                .filter((offer: any) => 
+                    offer &&
+                    Number(offer.status) === 0 && 
+                    currentTimestamp < Number(offer.expiresAt) &&
+                    userTokenIds.has(Number(offer.tokenId))
+                )
+                .slice(0, MAX_OFFERS)
+                .map((offer: any) => ({
+                        tokenId: Number(offer.tokenId),
+                        buyer: offer.buyerName as string,
+                        imageUrl: tokenIds.find(obj => obj.tokenId)?.imageUrl || '',
+                        price: formatEther(offer.offerPerToken)
+                    })
+                );
+        },
+        [`notify-${userAddress}`], // cache key
+        {
+            tags: [`notify-${userAddress}`],
+            revalidate: 60 // Revalidate every 1 minute
+        }
+    )()
 }
