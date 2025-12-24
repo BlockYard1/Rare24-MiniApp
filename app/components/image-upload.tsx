@@ -16,6 +16,7 @@ import { useFarcasterStore } from "../store/useFarcasterStore"
 import { CanPost } from "../types/index.t"
 import { saveUser } from "../backend/neon"
 import imageCompression from 'browser-image-compression'
+import { revalidateFeed } from "../blockchain/getterHooks"
 
 export function ImageUploadCard() {
   const route = useRouter()
@@ -219,6 +220,10 @@ export function ImageUploadCard() {
       // Update state
       setIsUploading(false)
       setIsSuccess(true)
+
+      // revalidate feed data
+      await revalidateFeed()
+      
     } catch (error) {
       console.error("Upload error:", error)
       setIsUploading(false)

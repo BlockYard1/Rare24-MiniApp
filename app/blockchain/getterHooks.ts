@@ -9,7 +9,7 @@ import { formatEther } from "viem";
 import { getUsersTokenIds } from "../backend/alchemy";
 import { NFTDetails } from "../types/index.t";
 import { getUserByUsername } from "../backend/neon";
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 /* RARE24 CONTRACT */
 
@@ -140,6 +140,11 @@ export async function getCreatorMoments(creator_username: string, creator_addres
         }
     )()
 }
+
+export async function revalidateCreatorMoments(creator_address: `0x${string}`) {
+  revalidateTag(`creator-moments-${creator_address}`, 'max')
+}
+
 // Timestamp to "10 June, 2023"
 function formatDate(timestamp: number) {
   const date = new Date(timestamp * 1000); // multiply by 1000 if timestamp is in seconds
@@ -335,6 +340,11 @@ export async function getMomentSaleData(tokenId: number) {
     )()
 }
 
+export async function revalidateMomentData(tokenId: number) {
+    revalidateTag(`moment-by-id-${tokenId}`, 'max')
+    revalidateTag(`moment-sale-data-${tokenId}`, 'max')
+}
+
 export async function getUserBalance(tokenId: number, address: `0x${string}`) {
     const balance = await readContract(config as Config, {
         abi: RARE24_CONTRACT_ABI,
@@ -466,6 +476,10 @@ export const getTokensListed = unstable_cache(
     }
 )
 
+export async function revalidateMarketplace() {
+  revalidateTag('marketplace-listings', 'max')
+}
+
 // Timestamp to "10h" or "34m"
 function formatTime(deadlineTimestamp: number): string {
   const now = Math.floor(Date.now() / 1000); // Current time in seconds
@@ -568,6 +582,10 @@ export const getSharedMoments = unstable_cache(
     }
 )
 
+export async function revalidateFeed() {
+  revalidateTag('getSharedMoments', 'max')
+}
+
 export async function getUserOffersListings(username: string) {
     return unstable_cache(
         async () => {
@@ -666,6 +684,10 @@ export async function getUserOffersListings(username: string) {
             revalidate: 60 // Revalidate every 1 minute
         }
     )()
+}
+
+export async function revalidateUserActivity(username: string) {
+  revalidateTag(`user-offers-listings-${username}`, 'max')
 }
 
 export async function checkNotification(userAddress: `0x${string}`) {

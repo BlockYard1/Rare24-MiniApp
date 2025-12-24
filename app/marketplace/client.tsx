@@ -11,6 +11,8 @@ import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "../block
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { TokenListings } from "../types/index.t"
 import { getEthPrice } from "../backend/price"
+import { revalidateMarketplace } from "../blockchain/getterHooks"
+import { revalidateUsersNfts } from "../backend/alchemy"
 
 export default function MarketplaceClient({ listedTokens } : { listedTokens: TokenListings[] }) {
   const route = useRouter()
@@ -73,8 +75,10 @@ export default function MarketplaceClient({ listedTokens } : { listedTokens: Tok
       setLoading(false)
       setSuccess(true)
 
-      // update listedTokens prop
-      route.refresh()
+      // revalidate marketplace data
+      await revalidateMarketplace()
+      // revalidate user's nfts
+      await revalidateUsersNfts(address as `0x${string}`)
 
     } catch(error) {
       console.error("handleAcceptOffer: ", error)

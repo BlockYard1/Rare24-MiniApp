@@ -2,7 +2,7 @@
 
 import { RARE24_CONTRACT_ADDRESS } from "../blockchain/core";
 import { NFTDetails, AlchemyNFTResponse } from "../types/index.t";
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 const network = 'base-mainnet';
 
@@ -43,4 +43,8 @@ export async function getUsersTokenIds(userAddress: `0x${string}`): Promise<NFTD
             revalidate: 60 // Revalidate every 5 minutes
         }
     )()
+}
+
+export async function revalidateUsersNfts(userAddress: `0x${string}`) {
+    revalidateTag(`user-nfts-${userAddress}`, 'max')
 }

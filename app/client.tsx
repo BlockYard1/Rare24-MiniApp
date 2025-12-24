@@ -14,6 +14,8 @@ import { SharedMoments } from "./types/index.t";
 import { getEthPrice } from "./backend/price";
 import { useRouter } from "next/navigation";
 import OnboardingFlow from "./components/onboarding";
+import { revalidateFeed } from "./blockchain/getterHooks";
+import { revalidateUsersNfts } from "./backend/alchemy";
 
 export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMoments[] }) {
   const { setUser, setLoading } = useFarcasterStore()
@@ -142,7 +144,11 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
       setIsLoading(false)
       setSuccess(true)
 
-      router.refresh()
+      // revalidate feed data
+      await revalidateFeed()
+      // revalidate user's nfts
+      await revalidateUsersNfts(address as `0x${string}`)
+
     } catch(error) {
       console.error("handleBuyNFT: ", error)
       setIsLoading(false)

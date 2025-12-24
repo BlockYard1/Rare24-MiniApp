@@ -14,6 +14,8 @@ import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "@/app/bl
 import { parseEther, formatEther } from "viem";
 import { getEthPrice } from "@/app/backend/price";
 import { useRouter } from "next/navigation";
+import { revalidateMomentData, revalidateMarketplace } from "@/app/blockchain/getterHooks";
+import { revalidateUsersNfts } from "@/app/backend/alchemy";
 
 interface Props {
     tokenId: number,
@@ -85,7 +87,13 @@ export default function NFTDetailsClient(
             setIsHandLoading(false)
             setSuccess(true)
 
-            route.refresh()
+            // revalidate moment data
+            await revalidateMomentData(tokenId)
+            // revalidate marketplace data
+            await revalidateMarketplace()
+            // revalidate user's nfts
+            await revalidateUsersNfts(address as `0x${string}`)
+
         } catch(error) {
             console.error("handleAcceptOffer: ", error)
             setIsHandLoading(false)
@@ -124,6 +132,9 @@ export default function NFTDetailsClient(
             setIsHandLoading(false)
             setSuccess(true)
 
+            // revalidate moment data
+            await revalidateMomentData(tokenId)
+
         } catch(error) {
             console.error("handleMakeOffer: ", error)
             setIsHandLoading(false)
@@ -161,6 +172,11 @@ export default function NFTDetailsClient(
             setIsHandLoading(false)
             setSuccess(true)
 
+            // revalidate moment data
+            await revalidateMomentData(tokenId)
+            // revalidate marketplace data
+            await revalidateMarketplace()
+
         } catch(error) {
             console.error("handleListing: ", error)
             setIsHandLoading(false)
@@ -197,6 +213,12 @@ export default function NFTDetailsClient(
             didSucceed = true
             setIsHandLoading(false)
             setSuccess(true)
+
+            // revalidate moment data
+            await revalidateMomentData(tokenId)
+            // revalidate marketplace data
+            await revalidateMarketplace()
+
         } catch(error) {
             console.error("handleAcceptOffer: ", error)
             setIsHandLoading(false)

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
 import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "@/app/blockchain/core";
 import { config } from "@/utils/wagmi";
+import { revalidateUserActivity } from "@/app/blockchain/getterHooks";
 
 interface Props {
     activity: UserOfferlistings[],
@@ -75,6 +76,9 @@ export default function ProfileClient(
       setProcess(false)
       setSuccess(true)
 
+      // revalidate user activity
+      await revalidateUserActivity(address as `0x${string}`)
+
     } catch(error) {
       console.error("Error: ", error)
       setProcess(false)
@@ -111,6 +115,9 @@ export default function ProfileClient(
       didSucceed = true
       setProcess(false)
       setSuccess(true)
+
+      // revalidate user activity
+      await revalidateUserActivity(address as `0x${string}`)
 
     } catch(error) {
       console.error("Error: ", error)
