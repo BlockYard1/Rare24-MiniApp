@@ -40,7 +40,7 @@ export async function getUsersTokenIds(userAddress: `0x${string}`): Promise<NFTD
         [`user-nfts-${userAddress}`], // cache key
         {
             tags: [`user-nfts-${userAddress}`],
-            revalidate: 300 // Revalidate every 5 minutes
+            revalidate: 60 // Revalidate every 5 minutes
         }
     )()
 }

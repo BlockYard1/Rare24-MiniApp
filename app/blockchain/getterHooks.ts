@@ -136,7 +136,7 @@ export async function getCreatorMoments(creator_username: string, creator_addres
         [`creator-moments-${creator_address}`], // cache key
         {
             tags: [`creator-moments-${creator_address}`],
-            revalidate: 300 // Revalidate every 5 minutes
+            revalidate: 60 // Revalidate every 1 minute
         }
     )()
 }
@@ -216,7 +216,7 @@ export async function getMomentById(tokenId: number) {
         [`moment-by-id-${tokenId}`], // cache key
         {
             tags: [`moment-by-id-${tokenId}`],
-            revalidate: 300 // Revalidate every 5 minutes
+            revalidate: 60 // Revalidate every 1 minute
         }
     )()
 }
@@ -663,7 +663,7 @@ export async function getUserOffersListings(username: string) {
         [`user-offers-listings-${username}`], // cache key
         {
             tags: [`user-offers-listings-${username}`],
-            revalidate: 300 // Revalidate every 5 minutes
+            revalidate: 60 // Revalidate every 1 minute
         }
     )()
 }
