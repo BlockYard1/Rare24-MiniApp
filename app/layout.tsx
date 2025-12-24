@@ -4,6 +4,7 @@ import "./globals.css";
 import TopBar from "./components/top-bar";
 import BottomNavigation from "./components/bottom-navigation";
 import { Web3Provider } from "./providers/wagmiProvider";
+import { ThemeProvider } from "next-themes"
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -24,14 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${manrope.variable} antialiased h-screen flex flex-col overflow-hidden`}
       >
         <Web3Provider>
-          <TopBar/>
-          <main className="flex-1 overflow-y-auto">{children}</main>
-          <BottomNavigation />
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <TopBar />
+            <main className="flex-1 overflow-y-auto">{children}</main>
+            <BottomNavigation />
+          </ThemeProvider>
         </Web3Provider>
       </body>
     </html>
