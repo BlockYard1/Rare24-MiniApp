@@ -9,7 +9,7 @@ import { getEthPrice } from "../backend/price"
 import { useConnection, Config, useBalance } from 'wagmi'
 import { simulateContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { formatEther, parseEther } from "viem"
-import { getCreatorMomentsCount, checkIfCanPost } from "../blockchain/getterHooks"
+import { getCreatorMomentsCount, checkIfCanPost, revalidateCreatorMoments } from "../blockchain/getterHooks"
 import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core"
 import { config } from "@/utils/wagmi"
 import { useFarcasterStore } from "../store/useFarcasterStore"
@@ -223,7 +223,9 @@ export function ImageUploadCard() {
 
       // revalidate feed data
       await revalidateFeed()
-      
+      // revalidate user's moments
+      await revalidateCreatorMoments(address as `0x${string}`)
+
     } catch (error) {
       console.error("Upload error:", error)
       setIsUploading(false)

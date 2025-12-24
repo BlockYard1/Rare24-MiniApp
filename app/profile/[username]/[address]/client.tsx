@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { simulateContract, writeContract, waitForTransactionReceipt } from "@wagmi/core"
 import { MARKETPLACE_CONTRACT_ABI, MARKETPLACE_CONTRACT_ADDRESS } from "@/app/blockchain/core";
 import { config } from "@/utils/wagmi";
-import { revalidateUserActivity } from "@/app/blockchain/getterHooks";
+import { revalidateUserActivity, revalidateMarketplace, revalidateMomentData } from "@/app/blockchain/getterHooks";
 
 interface Props {
     activity: UserOfferlistings[],
@@ -55,7 +55,7 @@ export default function ProfileClient(
     }
   }, [activeTab, moments, userNfts])
 
-  const handleCancel = async(type: string, id: number) => {
+  const handleCancel = async(type: string, id: number, tokenId: number) => {
     let didSucceed = false
 
     try{
@@ -78,6 +78,11 @@ export default function ProfileClient(
 
       // revalidate user activity
       await revalidateUserActivity(address as `0x${string}`)
+      // revalidate moment data
+      await revalidateMomentData(tokenId)
+      // revalidate marketplace data
+      if(type != 'Offer')
+        await revalidateMarketplace()
 
     } catch(error) {
       console.error("Error: ", error)
@@ -367,7 +372,7 @@ export default function ProfileClient(
                                     onClick={ async() => {
                                       if(!isConnected) return
                                       setSelectedId(index)
-                                      await handleCancel(item.type, item.id)
+                                      await handleCancel(item.type, item.id, item.tokenId)
                                     }}
                                     disabled={success || error || process}
                                     className={`w-full text-lg bg-blue-500 text-white text-center px-3 py-2 rounded-full ${item.expiresAt === "0m" && "hidden"}`}
