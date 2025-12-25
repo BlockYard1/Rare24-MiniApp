@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import TopBar from "./components/top-bar";
@@ -18,6 +18,13 @@ export const metadata: Metadata = {
     'base:app_id': '694a32f54d3a403912ed7c3e',
   }
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false
+}
 
 export default function RootLayout({
   children,
