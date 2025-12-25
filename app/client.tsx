@@ -33,7 +33,7 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
   const [inUsd, setInUsd] = useState("0")
   const [showOnboarding, setShowOnboarding] = useState(false)
 
-  console.log("Rendering HomeClient with moments:", JSON.stringify(sharedMoments[0].creator));
+  // console.log("Rendering HomeClient with moments:", JSON.stringify(sharedMoments[0].creator));
 
   // fetch user's ETH balance
   const ethBalance = data ? Number(formatEther(data.value)) : 0
