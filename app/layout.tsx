@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   other: {
     'base:app_id': '694a32f54d3a403912ed7c3e',
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  }
 };
 
 export default function RootLayout({
