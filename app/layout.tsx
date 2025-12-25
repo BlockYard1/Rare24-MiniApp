@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import TopBar from "./components/top-bar";
@@ -11,17 +11,18 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false
+}
+
 export const metadata: Metadata = {
   title: "Rare24",
   description: "Own Your Favourite Creator's Moment",
   other: {
     'base:app_id': '694a32f54d3a403912ed7c3e',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
   }
 };
 
