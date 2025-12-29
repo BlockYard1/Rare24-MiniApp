@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { ImagePlus, Send, Replace, LoaderPinwheel, CircleCheck, CircleX } from "lucide-react"
 import { uploadImage } from "../backend/upload"
 import { getEthPrice } from "../backend/price"
-import { useConnection, Config, useBalance } from 'wagmi'
+import { useConnection, Config } from 'wagmi'
 import { simulateContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { formatEther, parseEther } from "viem"
 import { getCreatorMomentsCount, checkIfCanPost, revalidateCreatorMoments } from "../blockchain/getterHooks"
@@ -22,7 +22,7 @@ export function ImageUploadCard() {
   const route = useRouter()
   const { isConnected, address } = useConnection()
   const user = useFarcasterStore((state) => state.user)
-  const { data } = useBalance({ address })
+  // const { data } = useBalance({ address })
 
   // console.log(`address: ${address} ${isConnected}`)
 
@@ -45,7 +45,7 @@ export function ImageUploadCard() {
   const [canPost, setCanPost] = useState<CanPost | null>(null)
 
   // fetch user's ETH balance
-  const ethBalance = data ? Number(formatEther(data.value)) : 0
+  // const ethBalance = data ? Number(formatEther(data.value)) : 0
 
   // Image Size
   const MIN_WIDTH = 500
@@ -382,7 +382,7 @@ export function ImageUploadCard() {
           {/* Upload Button */}
           <button
             onClick={async() => await handleUpload()}
-            disabled={!canPost?.canPost || !isConnected || ethBalance === 0}
+            disabled={!canPost?.canPost || !isConnected}
             className="w-full px-4 py-3 bg-gradient-to-br from-blue-500/15 to-teal-500/15 dark:from-blue-500/35 dark:to-teal-500/35 rounded-full font-medium flex items-center justify-center border border-teal-500 dark:border-teal-800"
           >
             {
@@ -393,13 +393,14 @@ export function ImageUploadCard() {
                   {
                     canPost?.canPost ? (
                       <>
-                        {
+                        {/* {
                           ethBalance === 0 ? (
                             <span className="text-blue-500 dark:text-blue-300">Insufficient ETH Balance</span>
                           ) : (
                             <span className="text-blue-500 dark:text-blue-100">Share Moment</span>
                           )
-                        }
+                        } */}
+                        <span className="text-blue-500 dark:text-blue-100">Share Moment</span>
                       </>
                     ) : (
                       <span className="text-blue-500 dark:text-blue-300">Moment Sharable In {canPost?.toNext}</span>
