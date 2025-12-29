@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import OnboardingFlow from "./components/onboarding";
 import { revalidateFeed } from "./blockchain/getterHooks";
 import { revalidateUsersNfts } from "./backend/alchemy";
+import { saveUser } from "./backend/neon";
 
 export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMoments[] }) {
   const { setUser, setLoading } = useFarcasterStore()
@@ -96,6 +97,16 @@ export default function HomeClient({ sharedMoments } : { sharedMoments: SharedMo
           if(userData) {
             setUser(userData)
             setUserName(userData.username)
+            // add to neon db
+            await saveUser({
+              fid: userData?.fid,
+              username: userData?.username,
+              display_name: userData?.displayName,
+              pfp_url: userData?.pfpUrl,
+              bio: userData?.bio
+            });
+
+            console.log('Farcaster user loaded:', userData.username)
           }
         }
       } catch (error) {
