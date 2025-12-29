@@ -154,6 +154,7 @@ export function ImageUploadCard() {
     setCaption("")
     setPrice("")
     setMaxsupply("")
+    setError(null)
   }
 
   // Upload
@@ -262,8 +263,7 @@ export function ImageUploadCard() {
                     <span className="animate-pulse">
                       <CircleX size={35} />
                     </span>
-                    <span className="text-lg font-semibold">Failed to Turn Moment Into NFT. Image is Too Large!</span>
-                    <span className="text-lg font-semibold">Image is Too Large!</span>
+                    <span className="text-lg font-semibold">Failed to Turn Moment Into NFT.</span>
                     <button onClick={() => closeStatus()} className="px-3 py-2 bg-red-600 rounded-lg text-white">
                       Let's Try Again
                     </button>
