@@ -17,7 +17,8 @@ export async function uploadImage(formData: FormData) {
         type: 'nft-image',
         uploadAt: new Date().toISOString()
       })
-    const imageUrl = await pinata.gateways.public.convert(cid);
+    // const imageUrl = await pinata.gateways.public.convert(cid);
+    const imageUrl = `https://indigo-dear-cephalopod-185.mypinata.cloud/ipfs/${cid}`
 
     // construct NFT metadata
     const nftMetadata = {
@@ -38,7 +39,8 @@ export async function uploadImage(formData: FormData) {
         type: 'nft-metadata',
         uploadAt: new Date().toISOString()
       })
-    const metadataUrl = await pinata.gateways.public.convert(metadataUpload.cid);
+    // const metadataUrl = await pinata.gateways.public.convert(metadataUpload.cid);
+    const metadataUrl = `https://indigo-dear-cephalopod-185.mypinata.cloud/ipfs/${metadataUpload.cid}`
     
     return { success: true, message: metadataUrl }
   } catch (error) {
