@@ -17,6 +17,7 @@ import { CanPost } from "../types/index.t"
 // import { saveUser } from "../backend/neon"
 import imageCompression from 'browser-image-compression'
 import { revalidateFeed } from "../blockchain/getterHooks"
+import { saveUser } from "../backend/neon"
 
 export function ImageUploadCard() {
   const route = useRouter()
@@ -171,18 +172,17 @@ export function ImageUploadCard() {
     setIsUploading(true)
 
     try {
-      // // new Promise(resolve => setTimeout(resolve, 5000))
-      let photo = image;
+      // new Promise(resolve => setTimeout(resolve, 5000))
 
-      // Compress image if larger than 2MB
-      if (image && image.size > 2 * 1024 * 1024) {
-        photo = await imageCompression(image, {
-          maxWidthOrHeight: 1920,
-          maxSizeMB: 1,
-          initialQuality: 1,
-          useWebWorker: true,
-        });
-      }
+      const MAX_SIZE = 2 * 1024 * 1024 // 2MB
+      const photo = image && image.size > MAX_SIZE
+        ? await imageCompression(image, {
+            maxWidthOrHeight: 1920,
+            maxSizeMB: 1,
+            initialQuality: 1,
+            useWebWorker: true,
+          })
+        : image
 
       // Create FormData
       const formData = new FormData()
@@ -193,40 +193,54 @@ export function ImageUploadCard() {
 
       // Upload image to Pinata
       const response = await uploadImage(formData)
-      // check error
       if(!response.success) throw new Error("Image Upload Failed!");
 
-      // call contract function
+      // Prepare contract arguments
       const creators: string[] = []
-      const { request } = await simulateContract(config as Config, {
-        abi: RARE24_CONTRACT_ABI,
-        address: RARE24_CONTRACT_ADDRESS,
-        functionName: 'uploadNft',
-        args: [response.message, parseEther(price), BigInt(maxsupply), user?.username, user?.pfpUrl, creators]
-      })
-      const hash = await writeContract(config as Config, request)
-      const receipt = await waitForTransactionReceipt(config as Config, { hash });
+      const contractArgs = [
+        response.message,
+        parseEther(price),
+        BigInt(maxsupply),
+        user?.username,
+        user?.pfpUrl,
+        creators
+      ] as const
 
-      if (!receipt) throw new Error("uploadNFT Failed!")
+      // Execute contract transaction AND save user in parallel
+      const [receipt] = await Promise.all([
+        // Contract operations
+        (async () => {
+          const { request } = await simulateContract(config as Config, {
+            abi: RARE24_CONTRACT_ABI,
+            address: RARE24_CONTRACT_ADDRESS,
+            functionName: 'uploadNft',
+            args: contractArgs
+          })
+          const hash = await writeContract(config as Config, request)
+          return await waitForTransactionReceipt(config as Config, { hash })
+        })(),
+        
+        // Save user to DB (independent operation)
+        saveUser({
+          fid: user?.fid,
+          username: user?.username,
+          display_name: user?.displayName,
+          pfp_url: user?.pfpUrl,
+          bio: user?.bio
+        }).catch(err => console.error("Failed to save user:", err))
+      ])
 
-      // upload creator to db or update if already existings
-      // await saveUser({
-      //   fid: user?.fid,
-      //   username: user?.username,
-      //   display_name: user?.displayName,
-      //   pfp_url: user?.pfpUrl,
-      //   bio: user?.bio
-      // });
+      if (!receipt) throw new Error("uploadNFT transaction failed!")
+
+      // Revalidate pages
+      await Promise.all([
+        revalidateFeed(),
+        address && revalidateCreatorMoments(address as `0x${string}`)
+      ])
       
       // Update state
       setIsUploading(false)
       setIsSuccess(true)
-
-      // revalidate feed data
-      await revalidateFeed()
-      // revalidate user's moments
-      await revalidateCreatorMoments(address as `0x${string}`)
-
     } catch (error) {
       console.error("Upload error:", error)
       setIsUploading(false)
