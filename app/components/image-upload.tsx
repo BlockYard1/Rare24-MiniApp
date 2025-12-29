@@ -159,7 +159,7 @@ export function ImageUploadCard() {
 
   // Upload
   const handleUpload = async () => {
-    if (!selectedImage || !caption || !price) {
+    if (!selectedImage || !caption || !price || Number(price) == 0 || !maxsupply || Number(maxsupply) == 0) {
       if(!selectedImage) setEmptyImage(true);
       if(!caption) setEmptyCaption(true);
       if(!price || Number(price) == 0) setEmptyPrice(true);
