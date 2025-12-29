@@ -14,7 +14,7 @@ import { RARE24_CONTRACT_ABI, RARE24_CONTRACT_ADDRESS } from "../blockchain/core
 import { config } from "@/utils/wagmi"
 import { useFarcasterStore } from "../store/useFarcasterStore"
 import { CanPost } from "../types/index.t"
-import { saveUser } from "../backend/neon"
+// import { saveUser } from "../backend/neon"
 import imageCompression from 'browser-image-compression'
 import { revalidateFeed } from "../blockchain/getterHooks"
 
@@ -191,7 +191,7 @@ export function ImageUploadCard() {
       user && formData.append('creator', user?.username)
       formData.append('momentCount', momentCount.toString())
 
-      // Call server action
+      // Upload image to Pinata
       const response = await uploadImage(formData)
       // check error
       if(!response.success) throw new Error("Image Upload Failed!");
@@ -210,13 +210,13 @@ export function ImageUploadCard() {
       if (!receipt) throw new Error("uploadNFT Failed!")
 
       // upload creator to db or update if already existings
-      await saveUser({
-        fid: user?.fid,
-        username: user?.username,
-        display_name: user?.displayName,
-        pfp_url: user?.pfpUrl,
-        bio: user?.bio
-      });
+      // await saveUser({
+      //   fid: user?.fid,
+      //   username: user?.username,
+      //   display_name: user?.displayName,
+      //   pfp_url: user?.pfpUrl,
+      //   bio: user?.bio
+      // });
       
       // Update state
       setIsUploading(false)
