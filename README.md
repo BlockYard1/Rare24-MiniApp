@@ -1,9 +1,243 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rare24 MiniApp - Technical Documentation
 
-## Getting Started
+## Project Overview
 
-First, run the development server:
+**Rare24** is a mini-app that allows users to collect and trade exclusive photo NFTs from their favorite creators. The platform operates on a "daily drop" model where only one moment (NFT) is released every 24 hours.
 
+### Core Features
+- **Daily NFT Drops**: Creators mint exclusive photo NFTs once every 24 hours
+- **NFT Marketplace**: Buy, sell, and trade collected moments
+- **Farcaster Integration**: Built as a mini-app on the Warpcast/Farcaster platform
+- **User Profiles**: View creator profiles and their NFT collections
+- **Notifications**: Real-time alerts for purchases and sales
+- **Image Upload**: IPFS-based image storage via Pinata
+
+### Tech Stack
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **Blockchain**: Base (Ethereum L2)
+- **Web3 Libraries**: viem, wagmi
+- **Authentication**: Neynar, Farcaster Quick Auth
+- **Database**: Neon (serverless PostgreSQL)
+- **Storage**: Pinata (IPFS)
+- **State Management**: Zustand
+- **Data Fetching**: TanStack React Query
+
+
+## Smart Contracts
+
+### Rare24 Contract
+**Address**: `0x15A2279dF042b6284E4a43Af052e8a3128E1E158`
+
+An ERC-1155 contract for minting and managing creator moment NFTs.
+
+**Key Functions**:
+- `mint()` - Mint a new moment (once per 24 hours per creator)
+- `mintBatch()` - Batch minting (with limits)
+- `burn()` - Burn NFTs
+- `setURI()` - Update metadata URI
+
+### Marketplace Contract
+**Address**: `0x435b2c4135517700ba80EaD194930f49239Fdb8e`
+
+Handles secondary market trading of NFTs.
+
+**Key Functions**:
+- `listItem()` - List an NFT for sale
+- `cancelListing()` - Remove a listing
+- `buyItem()` - Purchase a listed item
+- `makeOffer()` - Make an offer on an NFT
+- `acceptOffer()` - Accept an incoming offer
+
+---
+
+## Type Definitions
+
+### Core Types (`app/types/index.t.ts`)
+
+```typescript
+// User data from Farcaster
+interface UserData {
+  fid: number;
+  username: string;
+  displayName: string;
+  pfpUrl: string;
+  followerCount: number;
+  followingCount: number;
+  bio: string;
+}
+
+// NFT details
+interface NFTDetails {
+  tokenId: number;
+  totalMint_balance: string;
+  imageUrl: string;
+}
+
+// Creator's NFT collection
+interface CreatorNftData {
+  Nfts: NFTDetails[];
+  mints: number;
+  earning: string;
+}
+
+// Moment listing data
+interface SharedMoments {
+  tokenId: number;
+  creator: string;
+  creator_fid: number | null;
+  pfpUrl: string;
+  price: string;
+  amount: string;
+  sold: string;
+  imageUrl: string;
+  desc: string;
+  expires: string;
+}
+
+// Marketplace data
+interface MomentsSaleData {
+  lastSale: string;
+  collectionFloor: number;
+  highestOffer: number;
+  buyNow: OfferListing;
+  orders: OfferListing[];
+  listings: OfferListing[];
+}
+
+// Notifications
+interface Notification {
+  tokenId: number;
+  buyer: string;
+  imageUrl: string;
+  price: string;
+}
+```
+
+---
+
+## State Management
+
+### Zustand Stores (`app/store/useFarcasterStore.ts`)
+
+**FarcasterStore** - Manages user authentication state
+```typescript
+interface FarcasterStore {
+  user: UserData | null;
+  loading: boolean;
+  setUser: (user: UserData) => void;
+  setLoading: (loading: boolean) => void;
+  clearUser: () => void;
+}
+```
+
+**NotificationsStore** - Manages notification state
+```typescript
+interface NotificationsStore {
+  notify: Notification[] | null;
+  loading: boolean;
+  setNotify: (notify: Notification[]) => void;
+  setLoading: (loading: boolean) => void;
+  clearUser: () => void;
+}
+```
+
+---
+
+## API Routes & Backend
+
+### Alchemy (`app/backend/alchemy.ts`)
+- Fetches user's NFT ownership data
+- Retrieves NFT metadata
+
+### Neon Database (`app/backend- Stores/neon.ts`)
+ and retrieves user data
+- Manages listing data
+- Handles order/book data
+
+### Farcaster User (`app/backend/farcasterUser.ts`)
+- Fetches user profile data from Neynar
+- Retrieves follower/following counts
+
+### Upload (`app/backend/upload.ts`)
+- Handles image uploads to IPFS via Pinata
+
+### Price (`app/backend/price.ts`)
+- Pricing utilities for the marketplace
+
+---
+
+## Key Components
+
+### Providers (`app/providers/wagmiProvider.tsx`)
+- Wraps the app with Wagmi (Web3) and React Query providers
+- Initializes Farcaster SDK on client side
+
+### Layout (`app/layout.tsx`)
+- Root layout with:
+  - Web3Provider (Wagmi + Query)
+  - ThemeProvider (next-themes for dark mode)
+  - TopBar component
+  - BottomNavigation component
+  - Manrope font
+
+### Navigation
+- **TopBar**: App logo, search, theme toggle
+- **BottomNavigation**: Home, Marketplace, Upload, Notifications, Profile
+
+---
+
+## Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Home page with latest shared moments |
+| `/info` | About/info page |
+| `/marketplace` | NFT marketplace with listings |
+| `/marketplace/[token_id]/[address]` | NFT detail page |
+| `/profile/[username]/[address]` | Creator profile page |
+| `/search` | Search for creators/NFTs |
+| `/notifications` | User notifications |
+| `/uploadNft` | Upload and mint new NFT |
+| `/user/[fid]/[username]` | User details page |
+
+---
+
+## Environment Variables
+
+Required environment variables (see `.env.local`):
+
+```env
+# Database
+DATABASE_URL=...
+
+# Pinata (IPFS)
+PINATA_JWT=...
+NEXT_PUBLIC_GATEWAY_URL=...
+
+# Blockchain
+NEXT_PUBLIC_RPC_URL=...
+NEXT_PUBLIC_CHAIN_ID=...
+
+# Farcaster/Neynar
+NEYNAR_API_KEY=...
+NEXT_PUBLIC_FARCASTER_ID=...
+NEXT_PUBLIC_FARCASTER_URL=...
+
+# Alchemy
+ALCHEMY_API_KEY=...
+
+# Base
+NEXT_PUBLIC_BASE_CONTRACT_ADDRESS=...
+NEXT_PUBLIC_MARKETPLACE_CONTRACT_ADDRESS=...
+```
+
+---
+
+## Development
+
+### Running the Development Server
 ```bash
 npm run dev
 # or
@@ -14,23 +248,37 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
+```bash
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Lint
+```bash
+npm run lint
+```
 
-## Learn More
+### Start Production
+```bash
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Integration Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Farcaster Mini-App
+- Uses `@farcaster/miniapp-sdk` for Warpcast integration
+- Configured with app ID: `0000000000000000000000`
+- Supports Warpcast mini-app deep linking
 
-## Deploy on Vercel
+### Base Chain
+- Operates on Base (Ethereum L2)
+- Uses viem/wagmi for blockchain interactions
+- Contract ABIs defined in `app/blockchain/core.ts`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### IPFS Storage
+- Images uploaded to IPFS via Pinata
+- Gateway URL for retrieval configured in environment
